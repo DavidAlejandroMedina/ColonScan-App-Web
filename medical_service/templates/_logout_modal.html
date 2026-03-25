@@ -1,0 +1,14 @@
+<div class="modal-overlay" id="logoutModal" style="display: none;">
+    <div class="modal-content" role="dialog" aria-labelledby="logoutTitle" aria-describedby="logoutDesc">
+        <div class="modal-header">
+            <h2 id="logoutTitle" class="modal-title">¿Desea cerrar sesión?</h2>
+        </div>
+        <div id="logoutDesc" class="modal-body">
+            <p>Su sesión actual será finalizada y deberá iniciar sesión nuevamente para acceder al sistema.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeLogoutModal()">Cancelar</button>
+            <button type="button" class="btn btn-danger-filled" onclick="confirmLogout()">Sí, cerrar sesión</button>
+        </div>
+    </div>
+</div>

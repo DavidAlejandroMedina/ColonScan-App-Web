@@ -1,0 +1,358 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 50%, #f0fdfa 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.processing-container {
+    width: 100%;
+    max-width: 800px;
+}
+
+.processing-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    padding: 48px;
+}
+
+.processing-content {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    text-align: center;
+}
+
+/* Icon Animation */
+.icon-wrapper {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto;
+}
+
+.icon-background {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #3b82f6, #14b8a6);
+    border-radius: 50%;
+    opacity: 0.2;
+}
+
+.icon-background.pulse {
+    animation: pulse-animation 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-animation {
+    0%, 100% {
+        opacity: 0.2;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.3;
+        transform: scale(1.1);
+    }
+}
+
+.icon-circle {
+    position: absolute;
+    inset: 8px;
+    background: linear-gradient(135deg, #3b82f6, #14b8a6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.icon-content {
+    width: 48px;
+    height: 48px;
+    color: white;
+}
+
+.animate-spin {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Header */
+.processing-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.processing-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.processing-subtitle {
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+/* Steps Container */
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    background-color: #f9fafb;
+    transition: all 0.3s ease;
+}
+
+.step.active {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.step.completed {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.step.pending {
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
+}
+
+.step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: white;
+    font-weight: 600;
+}
+
+.step-icon.loading {
+    background-color: #3b82f6;
+    animation: spin 2s linear infinite;
+}
+
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.step-icon.pending {
+    background-color: #d1d5db;
+}
+
+.step-icon.completed {
+    background-color: #10b981;
+}
+
+.step-label {
+    flex: 1;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.step.pending .step-label {
+    color: #9ca3af;
+}
+
+/* Progress Section */
+.progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.progress-bar-wrapper {
+    width: 100%;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #14b8a6);
+    border-radius: 9999px;
+    transition: width 0.1s ease-out;
+    width: 0%;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #6b7280;
+    text-align: center;
+}
+
+#progressPercent {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Info Box */
+.info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    background-color: #f0fdfa;
+    border: 1px solid #ccfbf1;
+    border-radius: 12px;
+    color: #0d9488;
+}
+
+.info-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    color: #0d9488;
+}
+
+.info-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #0d9488;
+}
+
+/* Error Content */
+.error-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+}
+
+.error-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #fee2e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #dc2626;
+}
+
+.error-content h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.error-content p {
+    font-size: 16px;
+    color: #6b7280;
+    max-width: 500px;
+}
+
+.btn-retry {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background-color: #3b82f6;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-retry:hover {
+    background-color: #2563eb;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .processing-card {
+        padding: 32px 20px;
+    }
+
+    .processing-content {
+        gap: 24px;
+    }
+
+    .processing-title {
+        font-size: 20px;
+    }
+
+    .processing-subtitle {
+        font-size: 14px;
+    }
+
+    .icon-wrapper {
+        width: 80px;
+        height: 80px;
+    }
+
+    .icon-content {
+        width: 40px;
+        height: 40px;
+    }
+
+    .step {
+        padding: 12px;
+    }
+
+    .step-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .step-label {
+        font-size: 14px;
+    }
+}

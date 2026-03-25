@@ -1,0 +1,407 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resultados - {{ patient.first_name }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{% static 'media/svg_converted.png' %}">
+    <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'css/evaluation_results.css' %}">
+</head>
+<body>
+
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <a href="{% url 'patient_detail' patient.id %}" class="back-button-link">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Volver
+                </a>
+            </div>
+            <div class="header-center">
+                <h1>Resultados del Análisis IA</h1>
+                <p class="patient-label">Paciente: <strong>{{ patient.first_name }} {{ patient.last_name }}</strong> | Fecha: {{ evaluation.study_date|date:"d/m/Y" }}</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="dashboard-container">
+            <main class="main-content results-main">
+                <div class="results-content">
+                    <!-- Patient Info -->
+                    <div class="patient-info-header">
+                        <div>
+                            <p class="patient-label">Paciente: <strong>{{ patient.first_name }} {{ patient.last_name }}</strong></p>
+                            <p class="patient-date">Fecha: {{ evaluation.study_date|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Analysis Status Card -->
+                    {% if evaluation.analysis_result %}
+                        {% with result=evaluation.analysis_result %}
+                            <!-- Success Card -->
+                            {% if result.status == 'completed' or result.error == null %}
+                                <div class="status-card success-card">
+                                    <div class="status-icon success-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"><path d="M24 44a19.94 19.94 0 0 0 14.142-5.858A19.94 19.94 0 0 0 44 24a19.94 19.94 0 0 0-5.858-14.142A19.94 19.94 0 0 0 24 4A19.94 19.94 0 0 0 9.858 9.858A19.94 19.94 0 0 0 4 24a19.94 19.94 0 0 0 5.858 14.142A19.94 19.94 0 0 0 24 44Z"/><path stroke-linecap="round" d="m16 24l6 6l12-12"/></g></svg>
+                                    </div>
+                                    <div class="status-content">
+                                        <h2 class="status-title">Análisis completado exitosamente</h2>
+                                        <p class="status-description">
+                                            {% if result.predictions.0.polyps_detected %}
+                                                El sistema ha identificado {{ result.predictions.0.polyps_detected|length }} pólipo(s) en las imágenes analizadas.
+                                            {% else %}
+                                                El análisis se completó sin detectar anomalías significativas.
+                                            {% endif %}
+                                        </p>
+                                        <div class="status-tags">
+                                            {% if result.predictions.0.polyps_detected %}
+                                                <span class="tag">
+                                                    <strong>{{ result.predictions.0.polyps_detected|length }} pólipo(s) detectado(s)</strong>
+                                                </span>
+                                                <span class="tag confidence-tag">
+                                                    Confianza del modelo: {{ result.confidence_score|floatformat:4 }}%
+                                                </span>
+                                            {% else %}
+                                                <span class="tag">
+                                                    <strong>Sin pólipos detectados</strong>
+                                                </span>
+                                                <span class="tag confidence-tag">
+                                                    Confianza del modelo: {{ result.confidence_score|floatformat:1 }}%
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <!-- Error Card -->
+                                <div class="status-card error-card">
+                                    <div class="status-icon error-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <line x1="15" y1="9" x2="9" y2="15" />
+                                            <line x1="9" y1="9" x2="15" y2="15" />
+                                        </svg>
+                                    </div>
+                                    <div class="status-content">
+                                        <h2 class="status-title">Error en el análisis</h2>
+                                        <p class="status-description">{{ result.error }}</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Doctor Notes Section -->
+                            <div class="notes-section">
+                                <div class="notes-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"><path fill="#000" d="M16 12a3 3 0 0 1-3-3V5H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-6zm-2-3a2 2 0 0 0 2 2h3.59L14 5.41zM5 4h9l7 7v7a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3m0 4h6v1H5zm0 4h6v1H5zm0 4h13v1H5z" stroke-width="0.8" stroke="#000"/></svg>
+                                    <h3>Notas del Médico</h3>
+                                </div>
+                                <textarea 
+                                    class="notes-textarea" 
+                                    placeholder="Agregue sus observaciones, comentarios o interpretaciones adicionales sobre los hallazgos..."
+                                    id="doctor_notes"
+                                >{{ evaluation.observations }}</textarea>
+                                <p class="notes-footer">Estas notas se incluirán en el informe final del paciente.</p>
+                            </div>
+
+                            <!-- AI Recommendation Section -->
+                            <div class="recommendation-section">
+                                <div class="recommendation-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16"><path fill="currentColor" d="M8.75 10.25a.75.75 0 1 1-1.5 0a.75.75 0 0 1 1.5 0M7.5 8a.5.5 0 0 0 1 0V5.5a.5.5 0 0 0-1 0zm-.591-5.363a1.25 1.25 0 0 1 2.182 0l4.75 8.502a1.25 1.25 0 0 1-1.09 1.86H3.246a1.25 1.25 0 0 1-1.091-1.86zm1.309.488a.25.25 0 0 0-.437 0L3.03 11.627a.25.25 0 0 0 .218.372h9.503a.25.25 0 0 0 .218-.372z"/></svg>
+                                    <h3>Recomendación IA</h3>
+                                </div>
+
+
+                                <!-- Divider -->
+                                <div class="section-divider"></div>
+
+                                <!-- Preliminary Diagnosis -->
+                                <div class="recommendation-subsection">
+                                    <h4>Diagnóstico Preliminar</h4>
+                                    {% if result.predictions.0.polyps_detected %}
+                                        <p>Se detectaron posibles pólipos en las imágenes analizadas según el modelo de IA.</p>
+                                    {% else %}
+                                        <p>No se detectaron anomalías significativas en las imágenes analizadas.</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Lesions Detected -->
+                                <div class="recommendation-subsection">
+                                    <h4>Lesiones detectadas</h4>
+                                    {% if result.predictions.0.polyps_detected %}
+                                        <ul class="lesions-list">
+                                            {% for polyp in result.predictions.0.polyps_detected %}
+                                                <li>
+                                                    <strong>{{ polyp.polyp_type }}</strong> - 
+                                                    Slice #{{ polyp.slice_number }} 
+                                                    (Probabilidad: {{ polyp.probability|floatformat:2 }})
+                                                    {% if polyp.position %}
+                                                        - Posición: {{ polyp.position|title }}
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p>No se detectaron lesiones.</p>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Recommendation -->
+                                <div class="recommendation-subsection">
+                                    <h4>Recomendación</h4>
+                                    <div class="recommendation-response">{{ result.recommendations|safe }}</div>
+                                </div>
+
+                                <!-- Important Note -->
+                                <div class="note-box">
+                                    <strong>Nota:</strong> Este análisis es una herramienta de apoyo. La decisión final debe ser tomada por el médico especialista.
+                                </div>
+                            </div>
+
+                            <!-- Analysis Details Section -->
+                            <div class="analysis-details-section">
+                                <h3>Detalles del Análisis</h3>
+                                <div class="details-grid">
+                                    <div class="detail-item">
+                                        <span class="detail-label">Fecha de análisis:</span>
+                                        <span class="detail-value">
+                                            {% if evaluation.analysis_completed_at %}
+                                                {{ evaluation.analysis_completed_at|date:"d/m/Y" }}
+                                            {% elif result.prediction_timestamp %}
+                                                {{ result.prediction_timestamp|parse_iso_date:"d/m/Y" }}
+                                            {% else %}
+                                                {{ evaluation.study_date|date:"d/m/Y" }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Hora:</span>
+                                        <span class="detail-value">
+                                            {% if evaluation.analysis_completed_at %}
+                                                {{ evaluation.analysis_completed_at|date:"H:i" }}
+                                            {% elif result.prediction_timestamp %}
+                                                {{ result.prediction_timestamp|iso_time }}
+                                            {% else %}
+                                                --:--
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Modelo IA:</span>
+                                        <span class="detail-value">ViT Medical</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Imágenes procesadas:</span>
+                                        <span class="detail-value">
+                                            {% if result.predictions.0.total_slices %}
+                                                {{ result.predictions.0.total_slices }}
+                                            {% else %}
+                                                --
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Tiempo de análisis:</span>
+                                        <span class="detail-value">
+                                            {% if result.processing_time_seconds %}
+                                                {{ result.processing_time_seconds|floatformat:0 }}s
+                                            {% else %}
+                                                --
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span class="detail-label">Estado:</span>
+                                        <span class="detail-value status-badge completed">{{ result.status|title }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="action-buttons">
+                                <a href="{% url 'dashboard' %}" class="btn btn-outline">
+                                    Volver al dashboard
+                                </a>
+                                <button class="btn btn-primary" onclick="saveNotes()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                                        <polyline points="17 21 17 13 7 13 7 21" />
+                                        <polyline points="7 3 7 8 15 8" />
+                                    </svg>
+                                    Guardar notas
+                                </button>
+                            </div>
+                        {% endwith %}
+                    {% else %}
+                        <!-- Loading or No Results -->
+                        <div class="status-card loading-card">
+                            <div class="loading-spinner"></div>
+                            <h2>Procesando análisis...</h2>
+                            <p>Por favor espera mientras se procesa tu evaluación.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        function showLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function saveNotes() {
+            const notes = document.getElementById('doctor_notes').value;
+            const patientId = '{{ patient.id }}';
+            const evaluationId = '{{ evaluation.id }}';
+
+            // Mostrar indicador de carga
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <g stroke="white" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="12" cy="12" r="8" opacity="0.3"/><path d="M20 12a8 8 0 0 1-8 8"><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g>
+                </svg>
+                Guardando...
+            `;
+
+            // Realizar la petición POST
+            fetch(`/patient/${patientId}/evaluation/${evaluationId}/save-notes/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    observations: notes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    
+                    // Mostrar notificación de éxito
+                    showSuccessNotification('Guardado exitosamente');
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.innerHTML = originalText;
+                button.disabled = false;
+                alert('Error al guardar las notas: ' + error.message);
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function showSuccessNotification(message) {
+            // Crear una notificación visual temporal
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #001f0f;
+                color: #59f3a6;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                font-weight: 500;
+                animation: slideIn 0.3s ease-out;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+
+            const iconSVG = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink: 0;"><path d="m10.6 13.8l-2.15-2.15q-.275-.275-.7-.275t-.7.275t-.275.7t.275.7L9.9 15.9q.3.3.7.3t.7-.3l5.65-5.65q.275-.275.275-.7t-.275-.7t-.7-.275t-.7.275zM12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"/></svg>
+            `;
+            
+            const messageSpan = document.createElement('span');
+            messageSpan.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+            messageSpan.innerHTML = `${iconSVG}<span>${message}</span>`;
+            notification.appendChild(messageSpan);
+            document.body.appendChild(notification);
+
+            // Agregar animación si no existe
+            if (!document.querySelector('style[data-notification-animation]')) {
+                const style = document.createElement('style');
+                style.setAttribute('data-notification-animation', 'true');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Remover la notificación después de 3 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Cerrar modal al hacer clic fuera
+        window.onclick = function(event) {
+            const modal = document.getElementById('logoutModal');
+            if (event.target === modal) {
+                closeLogoutModal();
+            }
+        }
+    </script>
+</body>
+</html>

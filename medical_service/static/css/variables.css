@@ -1,0 +1,8 @@
+:root {
+    --primary: #2563eb;
+    --teal: #0d9488;
+    --bg-gradient: linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #f0fdfa 100%);
+    --error-bg: #fef2f2;
+    --error-border: #fee2e2;
+    --error-text: #991b1b;
+}

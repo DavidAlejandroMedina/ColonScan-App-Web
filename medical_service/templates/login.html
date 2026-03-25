@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ColonScan - Iniciar Sesión</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="{% static 'media/svg_converted.png' %}">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="header">
+                <div class="logo-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="124px" height="124px" viewBox="0 0 48 48">
+                    <defs>
+                        <mask id="shield-mask">
+                        <rect width="48" height="48" fill="white" />
+                        <circle cx="36" cy="35" r="11" fill="black" />
+                        </mask>
+                    </defs>
+
+                    <path mask="url(#shield-mask)" fill="#ffffff" d="M6 12.194a6.194 6.194 0 0 1 9.972-4.909A6.17 6.17 0 0 1 19.75 6c1.646 0 3.142.642 4.25 1.688A6.17 6.17 0 0 1 28.25 6a6.17 6.17 0 0 1 3.778 1.285a6.194 6.194 0 0 1 8.693 8.68A6.97 6.97 0 0 1 42 20a6.97 6.97 0 0 1-1.45 4.267a6.194 6.194 0 0 1-8.522 8.893a6 6 0 0 1-.815.531l-.026.063a4.4 4.4 0 0 0-.187.722V42h-2v-7.615q0-.09.016-.177c.074-.412.17-.823.304-1.17c.067-.175.154-.362.27-.534a1.54 1.54 0 0 1 .566-.516c.43-.22.816-.511 1.145-.86a1 1 0 0 1 1.454 0a4.194 4.194 0 1 0 5.777-6.067a1 1 0 0 1-.047-1.476A4.98 4.98 0 0 0 40 20a4.98 4.98 0 0 0-1.324-3.389a1 1 0 0 1 .041-1.397a4.195 4.195 0 0 0-2.689-7.208v.03c-.95 0-1.93.47-2.565 1.242c-.615.747-.897 1.758-.514 2.906a1 1 0 1 1-1.898.632c-.438-1.314-.33-2.562.134-3.618A4.18 4.18 0 0 0 28.25 8a4.19 4.19 0 0 0-3.432 1.783a1 1 0 0 1-1.636 0A4.19 4.19 0 0 0 19.75 8a4.18 4.18 0 0 0-3.05 1.316a1 1 0 0 1-1.455 0a4.194 4.194 0 1 0-5.93 5.93a1 1 0 0 1 0 1.453A4.18 4.18 0 0 0 8 19.75c0 1.418.702 2.672 1.783 3.432a1 1 0 0 1 0 1.636a4.196 4.196 0 0 0 1.446 7.515a1 1 0 0 1 .771.974v2.026a.889.889 0 0 0 1.778 0v-2.575a1 1 0 0 1 .502-.868a4.19 4.19 0 0 0 2.109-3.64a4.19 4.19 0 0 0-1.783-3.432a1 1 0 0 1-.154-.135C13.766 24.233 12.947 24 12 24a1 1 0 1 1 0-2c1.13 0 2.188.249 3.121.755a4.18 4.18 0 0 0 1.268-3.005a4.18 4.18 0 0 0-1.316-3.05a1 1 0 0 1 0-1.455q.089-.084.172-.172a1 1 0 0 1 1.454 0a4.18 4.18 0 0 0 3.051 1.316a4.19 4.19 0 0 0 3.432-1.783a1 1 0 0 1-1.636 0a4.19 4.19 0 0 0 3.432 1.783q.614-.002 1.172-.166a1 1 0 0 1 1.161 1.43A5 5 0 0 0 30 20c0 .904.24 1.75.658 2.481c1.139.64 1.885 1.272 2.325 2.004c.519.866.518 1.738.517 2.439V27a1 1 0 1 1-2 0c0-.787-.02-1.133-.233-1.486c-.173-.288-.531-.662-1.35-1.15a1 1 0 0 1-.225-.054a4.194 4.194 0 0 0-3.348 7.678q.158.082.285.186a1 1 0 0 1 .371.777V42h-2v-8.476a6.195 6.195 0 0 1 3.25-11.469h.057a7 7 0 0 1-.12-3.667A6.17 6.17 0 0 1 24 16.702a6.17 6.17 0 0 1-4.25 1.688a6.2 6.2 0 0 1-1.56-.198a6.2 6.2 0 0 1 .199 1.56A6.18 6.18 0 0 1 16.7 24a6.17 6.17 0 0 1 1.688 4.25a6.19 6.19 0 0 1-2.611 5.052v2.03a2.889 2.889 0 0 1-5.778 0v-1.289A6.196 6.196 0 0 1 7.688 24A6.18 6.18 0 0 1 6 19.75a6.17 6.17 0 0 1 1.285-3.778A6.17 6.17 0 0 1 6 12.194"/>
+
+                    <g transform="translate(24, 23) scale(0.8)">
+                        <path fill="#ffffff" d="M15.445 2.168a1 1 0 0 1 1.11 0c2.916 1.944 6.76 3.859 11.545 4.337a1 1 0 0 1 .9.995V16c0 3.88-2.124 7.17-4.701 9.546c-2.572 2.372-5.737 3.971-8.115 4.417l-.184.034l-.184-.034c-2.378-.446-5.543-2.045-8.115-4.417C5.124 23.17 3 19.88 3 16V7.5a1 1 0 0 1 .9-.995c4.785-.478 8.63-2.393 11.545-4.337m7.262 10.54a1 1 0 0 0-1.414-1.415L14 18.586l-2.293-2.293a1 1 0 0 0-1.414 1.414l3 3a1 1 0 0 0 1.414 0z"/>
+                    </g>
+                    </svg>
+                </div>
+                <h1>ColonScan</h1>
+                <p>Sistema de Detección Temprana de Cáncer Colorrectal</p>
+            </div>
+
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="id_username">Usuario</label>
+                    <input type="email" name="email" id="id_username" class="email-input" placeholder="ejemplo@hospital.com" required>
+                </div>
+
+                <div class="form-group password-field">
+                    <label for="id_password">Contraseña</label>
+                    <div class="input-wrapper">
+                        <input type="password" name="password" id="id_password" class="password-input" placeholder="••••••••" required>
+                        <!-- <a type="button" id="togglePassword" class="password-toggle" aria-label="Mostrar contraseña" title="Mostrar contraseña"> -->
+                            <!-- Eye (visible) - Mostrar cuando la contraseña está oculta -->
+                            <!-- <svg class="eye-icon eye-visible" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512">
+                                <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="32" d="M255.66 112c-77.94 0-157.89 45.11-220.83 135.33a16 16 0 0 0-.27 17.77C82.92 340.8 161.8 400 255.66 400c92.84 0 173.34-59.38 221.79-135.25a16.14 16.14 0 0 0 0-17.47C428.89 172.28 347.8 112 255.66 112"/>
+                                <circle cx="256" cy="256" r="80" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="32"/>
+                            </svg> -->
+                            <!-- Eye Off (hidden) - Mostrar cuando la contraseña es visible -->
+                            <!-- <svg class="eye-icon eye-hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 512 512" style="display: none;">
+                                <path fill="currentColor" d="M432 448a15.92 15.92 0 0 1-11.31-4.69l-352-352a16 16 0 0 1 22.62-22.62l352 352A16 16 0 0 1 432 448m-176.34-64c-41.49 0-81.5-12.28-118.92-36.5c-34.07-22-64.74-53.51-88.7-91v-.08c19.94-28.57 41.78-52.73 65.24-72.21a2 2 0 0 0 .14-2.94L93.5 161.38a2 2 0 0 0-2.71-.12c-24.92 21-48.05 46.76-69.08 76.92a31.92 31.92 0 0 0-.64 35.54c26.41 41.33 60.4 76.14 98.28 100.65C162 402 207.9 416 255.66 416a239.1 239.1 0 0 0 75.8-12.58a2 2 0 0 0 .77-3.31l-21.58-21.58a4 4 0 0 0-3.83-1a204.8 204.8 0 0 1-51.16 6.47m235.18-145.4c-26.46-40.92-60.79-75.68-99.27-100.53C349 110.55 302 96 255.66 96a227.3 227.3 0 0 0-74.89 12.83a2 2 0 0 0-.75 3.31l21.55 21.55a4 4 0 0 0 3.88 1a192.8 192.8 0 0 1 50.21-6.69c40.69 0 80.58 12.43 118.55 37c34.71 22.4 65.74 53.88 89.76 91a.13.13 0 0 1 0 .16a310.7 310.7 0 0 1-64.12 72.73a2 2 0 0 0-.15 2.95l19.9 19.89a2 2 0 0 0 2.7.13a343.5 343.5 0 0 0 68.64-78.48a32.2 32.2 0 0 0-.1-34.78"/>
+                                <path fill="currentColor" d="M256 160a96 96 0 0 0-21.37 2.4a2 2 0 0 0-1 3.38l112.59 112.56a2 2 0 0 0 3.38-1A96 96 0 0 0 256 160m-90.22 73.66a2 2 0 0 0-3.38 1a96 96 0 0 0 115 115a2 2 0 0 0 1-3.38Z"/>
+                            </svg> -->
+                        <!-- </a> -->
+                    </div>
+                </div>
+
+                {% if messages %}
+                {% for message in messages %}
+                <div class="error-box {{ message.tags }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-alert">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p>{{ message }}</p>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <button type="submit" class="btn-primary">Iniciar sesión</button>
+            </form>
+
+            <!-- <div class="footer-links">
+                <a href="#">¿Olvidaste tu contraseña?</a>
+            </div> -->
+        </div>
+        <p class="version">v1.0.0 - Sistema seguro de análisis médico</p>
+    </div>
+    <script>
+        function initializePasswordToggle() {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('id_password');
+            const eyeVisible = document.querySelector('.eye-visible');
+            const eyeHidden = document.querySelector('.eye-hidden');
+
+            if (togglePassword && passwordInput) {
+                togglePassword.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Cambiar el tipo de input
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Actualizar íconos
+                    if (type === 'password') {
+                        // Contraseña oculta - mostrar ojo normal
+                        eyeVisible.style.display = 'block';
+                        eyeHidden.style.display = 'none';
+                        this.setAttribute('aria-label', 'Mostrar contraseña');
+                        this.setAttribute('title', 'Mostrar contraseña');
+                    } else {
+                        // Contraseña visible - mostrar ojo tachado
+                        eyeVisible.style.display = 'none';
+                        eyeHidden.style.display = 'block';
+                        this.setAttribute('aria-label', 'Ocultar contraseña');
+                        this.setAttribute('title', 'Ocultar contraseña');
+                    }
+                });
+            }
+        }
+
+        // Mostrar notificación de logout exitoso
+        function checkLogoutSuccess() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('logout_success') === '1') {
+                showLogoutNotification();
+                // Limpiar la URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function showLogoutNotification() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #000d1f;
+                color: #5896f3;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                font-weight: 500;
+                animation: slideIn 0.3s ease-out;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+
+            const iconSVG = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0a8 8 0 0 1 16 0m-7-4a1 1 0 1 1-2 0a1 1 0 0 1 2 0M9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9z" clip-rule="evenodd"/></svg>
+            `;
+
+            const messageSpan = document.createElement('span');
+            messageSpan.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+            messageSpan.innerHTML = `${iconSVG}<span>Sesión cerrada<br>Ha salido del sistema de forma segura</span>`;
+
+            notification.appendChild(messageSpan);
+            document.body.appendChild(notification);
+
+            // Agregar animación si no existe
+            if (!document.querySelector('style[data-notification-animation]')) {
+                const style = document.createElement('style');
+                style.setAttribute('data-notification-animation', 'true');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Remover la notificación después de 3 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLogoutSuccess();
+            initializePasswordToggle();
+            
+            // También puedes inicializar para cualquier otro campo de contraseña
+            // Si hay múltiples campos de contraseña, puedes usar querySelectorAll
+            const allPasswordToggles = document.querySelectorAll('.password-toggle');
+            allPasswordToggles.forEach(toggle => {
+                // La lógica puede ser similar pero necesitarías identificar el input asociado
+            });
+        });
+    </script>
+</body>
+</html>

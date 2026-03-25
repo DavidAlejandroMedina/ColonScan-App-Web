@@ -1,0 +1,20 @@
+<div class="modal-overlay" id="inactivityModal" style="display: none;">
+    <div class="modal-content" role="dialog" aria-labelledby="inactivityTitle" aria-describedby="inactivityDesc">
+        <div class="modal-header">
+            <div class="modal-icon warning">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h2 id="inactivityTitle" class="modal-title">Sesión Inactiva</h2>
+        </div>
+        <div id="inactivityDesc" class="modal-body">
+            <p>Su sesión ha estado inactiva durante más de 10 minutos. Por motivos de seguridad, será desconectado automáticamente en 1 minuto si no hay actividad.</p>
+            <p class="mt-2">¿Desea continuar con su sesión actual?</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline btn-danger" onclick="logout()">Cerrar sesión</button>
+            <button class="btn btn-primary" onclick="continueSession()">Continuar sesión</button>
+        </div>
+    </div>
+</div>

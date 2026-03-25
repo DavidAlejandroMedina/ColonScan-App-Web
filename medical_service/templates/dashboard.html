@@ -1,0 +1,421 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Colon Scan - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{% static 'media/svg_converted.png' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+</head>
+<body>
+    {% include '_inactivity_modal.html' %}
+    {% include '_logout_modal.html' %}
+    {% include '_register.html' %}
+
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 48 48">
+                    <defs>
+                        <mask id="shield-mask">
+                        <rect width="48" height="48" fill="white" />
+                        <circle cx="36" cy="35" r="11" fill="black" />
+                        </mask>
+                    </defs>
+
+                    <path mask="url(#shield-mask)" fill="#ffffff" d="M6 12.194a6.194 6.194 0 0 1 9.972-4.909A6.17 6.17 0 0 1 19.75 6c1.646 0 3.142.642 4.25 1.688A6.17 6.17 0 0 1 28.25 6a6.17 6.17 0 0 1 3.778 1.285a6.194 6.194 0 0 1 8.693 8.68A6.97 6.97 0 0 1 42 20a6.97 6.97 0 0 1-1.45 4.267a6.194 6.194 0 0 1-8.522 8.893a6 6 0 0 1-.815.531l-.026.063a4.4 4.4 0 0 0-.187.722V42h-2v-7.615q0-.09.016-.177c.074-.412.17-.823.304-1.17c.067-.175.154-.362.27-.534a1.54 1.54 0 0 1 .566-.516c.43-.22.816-.511 1.145-.86a1 1 0 0 1 1.454 0a4.194 4.194 0 1 0 5.777-6.067a1 1 0 0 1-.047-1.476A4.98 4.98 0 0 0 40 20a4.98 4.98 0 0 0-1.324-3.389a1 1 0 0 1 .041-1.397a4.195 4.195 0 0 0-2.689-7.208v.03c-.95 0-1.93.47-2.565 1.242c-.615.747-.897 1.758-.514 2.906a1 1 0 1 1-1.898.632c-.438-1.314-.33-2.562.134-3.618A4.18 4.18 0 0 0 28.25 8a4.19 4.19 0 0 0-3.432 1.783a1 1 0 0 1-1.636 0A4.19 4.19 0 0 0 19.75 8a4.18 4.18 0 0 0-3.05 1.316a1 1 0 0 1-1.455 0a4.194 4.194 0 1 0-5.93 5.93a1 1 0 0 1 0 1.453A4.18 4.18 0 0 0 8 19.75c0 1.418.702 2.672 1.783 3.432a1 1 0 0 1 0 1.636a4.196 4.196 0 0 0 1.446 7.515a1 1 0 0 1 .771.974v2.026a.889.889 0 0 0 1.778 0v-2.575a1 1 0 0 1 .502-.868a4.19 4.19 0 0 0 2.109-3.64a4.19 4.19 0 0 0-1.783-3.432a1 1 0 0 1-.154-.135C13.766 24.233 12.947 24 12 24a1 1 0 1 1 0-2c1.13 0 2.188.249 3.121.755a4.18 4.18 0 0 0 1.268-3.005a4.18 4.18 0 0 0-1.316-3.05a1 1 0 0 1 0-1.455q.089-.084.172-.172a1 1 0 0 1 1.454 0a4.18 4.18 0 0 0 3.051 1.316a4.19 4.19 0 0 0 3.432-1.783a1 1 0 0 1-1.636 0a4.19 4.19 0 0 0 3.432 1.783q.614-.002 1.172-.166a1 1 0 0 1 1.161 1.43A5 5 0 0 0 30 20c0 .904.24 1.75.658 2.481c1.139.64 1.885 1.272 2.325 2.004c.519.866.518 1.738.517 2.439V27a1 1 0 1 1-2 0c0-.787-.02-1.133-.233-1.486c-.173-.288-.531-.662-1.35-1.15a1 1 0 0 1-.225-.054a4.194 4.194 0 0 0-3.348 7.678q.158.082.285.186a1 1 0 0 1 .371.777V42h-2v-8.476a6.195 6.195 0 0 1 3.25-11.469h.057a7 7 0 0 1-.12-3.667A6.17 6.17 0 0 1 24 16.702a6.17 6.17 0 0 1-4.25 1.688a6.2 6.2 0 0 1-1.56-.198a6.2 6.2 0 0 1 .199 1.56A6.18 6.18 0 0 1 16.7 24a6.17 6.17 0 0 1 1.688 4.25a6.19 6.19 0 0 1-2.611 5.052v2.03a2.889 2.889 0 0 1-5.778 0v-1.289A6.196 6.196 0 0 1 7.688 24A6.18 6.18 0 0 1 6 19.75a6.17 6.17 0 0 1 1.285-3.778A6.17 6.17 0 0 1 6 12.194"/>
+
+                    <g transform="translate(24, 23) scale(0.8)">
+                        <path fill="#ffffff" d="M15.445 2.168a1 1 0 0 1 1.11 0c2.916 1.944 6.76 3.859 11.545 4.337a1 1 0 0 1 .9.995V16c0 3.88-2.124 7.17-4.701 9.546c-2.572 2.372-5.737 3.971-8.115 4.417l-.184.034l-.184-.034c-2.378-.446-5.543-2.045-8.115-4.417C5.124 23.17 3 19.88 3 16V7.5a1 1 0 0 1 .9-.995c4.785-.478 8.63-2.393 11.545-4.337m7.262 10.54a1 1 0 0 0-1.414-1.415L14 18.586l-2.293-2.293a1 1 0 0 0-1.414 1.414l3 3a1 1 0 0 0 1.414 0z"/>
+                    </g>
+                    </svg>
+                </div>
+                <div class="header-title">
+                    <h1>Colon Scan</h1>
+                    <p>Sistema de Análisis Colorrectal</p>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <!-- Botón oculto para simular inactividad (solo desarrollo) -->
+                <!-- <button class="btn btn-ghost btn-sm inactivity-simulator" onclick="showInactivityModal()" title="Simular advertencia de inactividad">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </button> -->
+
+                <div class="header-right">
+                    <div class="dropdown">
+                        <div class="avatar">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1.2em" height="1.2em" viewBox="0 0 640 640"><path fill="#2563eb" d="M240 192c0-44.2 35.8-80 80-80s80 35.8 80 80s-35.8 80-80 80s-80-35.8-80-80m208 0c0-70.7-57.3-128-128-128s-128 57.3-128 128s57.3 128 128 128s128-57.3 128-128M144 544c0-70.7 57.3-128 128-128h96c70.7 0 128 57.3 128 128v8c0 13.3 10.7 24 24 24s24-10.7 24-24v-8c0-97.2-78.8-176-176-176h-96c-97.2 0-176 78.8-176 176v8c0 13.3 10.7 24 24 24s24-10.7 24-24z"/></svg>
+                        </div>
+                        <span>Dr. {{ user.get_full_name }}</span>
+                    </div>
+
+                    <a href="#" class="dropdown-item text-danger" onclick="event.preventDefault(); showLogoutModal()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="#991b1b" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6q.425 0 .713.288T12 4t-.288.713T11 5H5v14h6q.425 0 .713.288T12 20t-.288.713T11 21zm12.175-8H10q-.425 0-.712-.288T9 12t.288-.712T10 11h7.175L15.3 9.125q-.275-.275-.275-.675t.275-.7t.7-.313t.725.288L20.3 11.3q.3.3.3.7t-.3.7l-3.575 3.575q-.3.3-.712.288t-.713-.313q-.275-.3-.262-.712t.287-.688z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h2 class="card-title">Pacientes Registrados</h2>
+                            <p class="card-description">Gestione y consulte el historial de sus pacientes</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="showRegisterModal()" title="Registrar nuevo paciente">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                <circle cx="9" cy="7" r="4" />
+                                <line x1="19" y1="8" x2="19" y2="14" />
+                                <line x1="22" y1="11" x2="16" y2="11" />
+                            </svg>
+                            
+                            Nuevo paciente
+                        </button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="search-container">
+                        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><g fill="none" fill-rule="evenodd"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="#9ba3b1" d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0"/></g>
+                        </svg>
+                        <input 
+                            type="text" 
+                            class="search-input" 
+                            placeholder="Buscar por nombre o ID del paciente..."
+                            id="searchInput"
+                            onkeyup="filterPatients()"
+                        >
+                    </div>
+
+                    <!-- Patients Table -->
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>ID Paciente</th>
+                                    <th>Última Evaluación</th>
+                                    <th>Estado</th>
+                                    <th class="text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patientsTableBody">
+                                {% for patient in patients %}
+                                <tr class="patient-row" data-name="{{ patient.first_name|lower }} {{ patient.last_name|lower }}" data-patient-id="{{ patient.patient_id|default:''|lower }}">
+                                    <td>{{ patient.first_name }} {{ patient.last_name }}</td>
+                                    <td class="patient-id">{{ patient.identification|default:'PAT-XXXX-XXXX' }}</td>
+                                    <td>{{ patient.last_evaluation_date|date:'d/m/Y'|default:'No evaluado' }}</td>
+                                    <td>
+                                        {% if patient.status == 'evaluated' %}
+                                        <span class="badge badge-success">Evaluado</span>
+                                        {% else %}
+                                        <span class="badge badge-warning">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        <button class="btn btn-ghost btn-sm" onclick="viewPatientDetails('{{ patient.id }}')">
+                                            Ver detalles
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            <!-- </tbody>
+                            </table>
+                            </div> -->
+                            <!-- Row shown when client-side search finds no results -->
+                            <!-- <tbody> -->
+                                <tr id="noResultsRow" style="display: none;">
+                                    <td colspan="5" class="empty-state">
+                                        <div class="empty-state-content">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24"><g fill="none" stroke="#d1d5db" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M16 3.128a4 4 0 0 1 0 7.744M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/></g>
+                                            </svg>
+                                            <p>No se encontraron pacientes</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Funcionalidad del dropdown
+        function toggleDropdown() {
+            document.getElementById('userDropdown').classList.toggle('show');
+        }
+
+        // Cerrar dropdown al hacer clic fuera
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropdown-toggle') && !event.target.matches('.dropdown-toggle *')) {
+                var dropdowns = document.getElementsByClassName('dropdown-menu');
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.classList.contains('show')) {
+                        openDropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        // Búsqueda de pacientes
+        function filterPatients() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.patient-row');
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-name');
+                const patientId = row.getAttribute('data-patient-id');
+                
+                if (name.includes(searchTerm) || patientId.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show "no results" row when all patient rows are hidden
+            const noResultsRow = document.getElementById('noResultsRow');
+            const anyVisible = Array.from(rows).some(r => r.style.display !== 'none');
+            if (!anyVisible) {
+                noResultsRow.style.display = '';
+            } else {
+                noResultsRow.style.display = 'none';
+            }
+        }
+
+        // Navegación activa
+        function setActiveSection(section) {
+            document.getElementById('nav-inicio').classList.remove('active');
+            document.getElementById('nav-configuracion').classList.remove('active');
+            
+            if (section === 'inicio') {
+                document.getElementById('nav-inicio').classList.add('active');
+            } else {
+                document.getElementById('nav-configuracion').classList.add('active');
+            }
+        }
+
+        // Modal de inactividad
+        function showInactivityModal() {
+            document.getElementById('inactivityModal').style.display = 'flex';
+        }
+
+        function continueSession() {
+            document.getElementById('inactivityModal').style.display = 'none';
+        }
+
+        // Modal de confirmación de cierre de sesión
+        function showLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'flex';
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').style.display = 'none';
+        }
+
+        // Modal de registro
+        function showRegisterModal() {
+            document.getElementById('registerModal').style.display = 'flex';
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').style.display = 'none';
+        }
+
+        function confirmLogout() {
+            // Reuse existing logout navigation
+            logout();
+        }
+
+        function logout() {
+            window.location.href = "{% url 'logout' %}";
+        }
+
+        // Ver detalles del paciente
+        function viewPatientDetails(patientId) {
+            window.location.href = `/patient/${patientId}/details/`;
+        }
+
+        // Mostrar notificación de paciente registrado
+        function checkPatientCreated() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('patient_created') === '1') {
+                const patientName = params.get('patient_name') || 'Paciente';
+                showPatientCreatedNotification(patientName);
+                // Limpiar la URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function showPatientCreatedNotification(patientName) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #001f0f;
+                color: #59f3a6;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                font-weight: 500;
+                animation: slideIn 0.3s ease-out;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+
+            const iconSVG = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m10.6 13.8l-2.15-2.15q-.275-.275-.7-.275t-.7.275t-.275.7t.275.7L9.9 15.9q.3.3.7.3t.7-.3l5.65-5.65q.275-.275.275-.7t-.275-.7t-.7-.275t-.7.275zM12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"/></svg>
+            `;
+
+            const messageSpan = document.createElement('span');
+            messageSpan.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+            messageSpan.innerHTML = `${iconSVG}<span>Paciente registrado<br>${patientName} ha sido registrado exitosamente</span>`;
+
+            notification.appendChild(messageSpan);
+            document.body.appendChild(notification);
+
+            // Agregar animación si no existe
+            if (!document.querySelector('style[data-notification-animation]')) {
+                const style = document.createElement('style');
+                style.setAttribute('data-notification-animation', 'true');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Remover la notificación después de 3 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        // Mostrar notificación de login exitoso
+        function checkLoginSuccess() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('login_success') === '1') {
+                showLoginSuccessNotification();
+                // Limpiar la URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        }
+
+        function showLoginSuccessNotification() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background-color: #001f0f;
+                color: #59f3a6;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
+                font-weight: 500;
+                animation: slideIn 0.3s ease-out;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+
+            const iconSVG = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="m10.6 13.8l-2.15-2.15q-.275-.275-.7-.275t-.7.275t-.275.7t.275.7L9.9 15.9q.3.3.7.3t.7-.3l5.65-5.65q.275-.275.275-.7t-.275-.7t-.7-.275t-.7.275zM12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22"/></svg>
+            `;
+
+            const messageSpan = document.createElement('span');
+            messageSpan.style.cssText = `
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            `;
+            messageSpan.innerHTML = `${iconSVG}<span>Sesión iniciada correctamente</span>`;
+
+            notification.appendChild(messageSpan);
+            document.body.appendChild(notification);
+
+            // Agregar animación si no existe
+            if (!document.querySelector('style[data-notification-animation]')) {
+                const style = document.createElement('style');
+                style.setAttribute('data-notification-animation', 'true');
+                style.textContent = `
+                    @keyframes slideIn {
+                        from {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                    }
+                    @keyframes slideOut {
+                        from {
+                            transform: translateX(0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translateX(400px);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Remover la notificación después de 3 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Ejecutar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            checkPatientCreated();
+            checkLoginSuccess();
+        });
+    </script>
+</body>
+</html>

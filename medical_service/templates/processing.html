@@ -1,0 +1,311 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizando - ColonScan</title>
+    <link rel="stylesheet" href="{% static 'css/processing.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{% static 'media/svg_converted.png' %}">
+</head>
+<body>
+    <div class="processing-container">
+        <div class="processing-card">
+            <div class="processing-content">
+                <!-- Animated Icon -->
+                <div class="icon-wrapper">
+                    <div class="icon-background pulse"></div>
+                    <div class="icon-circle" id="main-icon">
+                        <!-- Ícono del step actual se actualiza dinámicamente -->
+                        <svg id="main-icon-svg" xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 20 20"><path fill="currentColor" d="M17.125 6.17L15.079.535c-.151-.416-.595-.637-.989-.492L.492 5.006c-.394.144-.593.597-.441 1.013l2.156 5.941V8.777c0-1.438 1.148-2.607 2.56-2.607H8.36l4.285-3.008l2.479 3.008zM19.238 8H4.767a.76.76 0 0 0-.762.777v9.42c.001.444.343.803.762.803h14.471c.42 0 .762-.359.762-.803v-9.42A.76.76 0 0 0 19.238 8M18 17H6v-2l1.984-4.018l2.768 3.436l2.598-2.662l3.338-1.205L18 14z" stroke-width="0.5" stroke="currentColor"/></svg>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <div class="processing-header">
+                    <h2 class="processing-title">Analizando imágenes del colon</h2>
+                    <p class="processing-subtitle">
+                        El modelo de IA está evaluando posibles pólipos y anomalías
+                    </p>
+                </div>
+
+                <!-- Progress Steps -->
+                <div class="steps-container">
+                    <!-- Step 1: Loading -->
+                    <div class="step active" id="step-0">
+                        <div class="step-icon loading">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet"><path fill="currentColor" d="M17.125 6.17L15.079.535c-.151-.416-.595-.637-.989-.492L.492 5.006c-.394.144-.593.597-.441 1.013l2.156 5.941V8.777c0-1.438 1.148-2.607 2.56-2.607H8.36l4.285-3.008l2.479 3.008zM19.238 8H4.767a.76.76 0 0 0-.762.777v9.42c.001.444.343.803.762.803h14.471c.42 0 .762-.359.762-.803v-9.42A.76.76 0 0 0 19.238 8M18 17H6v-2l1.984-4.018l2.768 3.436l2.598-2.662l3.338-1.205L18 14z" stroke-width="0.5" stroke="currentColor"/></svg>
+                        </div>
+                        <p class="step-label">Cargando y preprocesando imágenes</p>
+                    </div>
+
+                    <!-- Step 2: Processing -->
+                    <div class="step" id="step-1">
+                        <div class="step-icon pending">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22px" height="22px" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><path stroke-linejoin="round" d="M12 4.5a2.5 2.5 0 0 0-5 0a3 3 0 0 0-2.567 4.553a3.001 3.001 0 0 0 0 5.893A3 3 0 0 0 7 19.5a2.5 2.5 0 0 0 5 0m0 0a2.5 2.5 0 0 0 5 0a3 3 0 0 0 2.567-4.554a3.001 3.001 0 0 0 0-5.893A3 3 0 0 0 17 4.5a2.5 2.5 0 0 0-5 0"/><path d="M10.487 7v1.98M7 10.5h2.052m5.971 0h2.052m-2.052 2.974h2.052M7 13.475h2.052m1.435 1.545V17m3.025-1.98V17m-.01-10v1.98m-3.45 5.988h3.971a1 1 0 0 0 1-1V9.98a1 1 0 0 0-1-1h-3.971a1 1 0 0 0-1 1v3.988a1 1 0 0 0 1 1Z"/></g></svg>
+                        </div>
+                        <p class="step-label">Aplicando modelo de IA para detección</p>
+                    </div>
+
+                    <!-- Step 3: Analyzing -->
+                    <div class="step" id="step-2">
+                        <div class="step-icon pending">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22px" height="22px" viewBox="0 0 24 24" preserveAspectRatio="xMidYMid meet"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M8 9h2m-2 4h8m-8 2h8m-8 2h2m-4 3h10a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1"/><circle cx="16" cy="5" r="0.3" fill="currentColor"/></g></svg>
+                        </div>
+                        <p class="step-label">Analizando resultados y generando informe</p>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-section">
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                    </div>
+                    <p class="progress-text"><span id="progressPercent">0</span>% completado</p>
+                </div>
+
+                <!-- Info Box -->
+                <div class="info-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"><path d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4S4 12.954 4 24s8.954 20 20 20Z"/><path stroke-linecap="round" d="M24.008 12v12.01l8.479 8.48"/></g></svg>
+                    <p class="info-text">
+                        Este proceso puede tomar entre 2-3 minutos. Por favor, no cierre esta ventana.
+                    </p>
+                </div>
+
+                <!-- Hidden data -->
+                <input type="hidden" id="task-id" value="{{ task_id }}">
+                <input type="hidden" id="evaluation-id" value="{{ evaluation_id }}">
+                <input type="hidden" id="patient-id" value="{{ patient_id }}">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8001/api/v1';
+        const POLLING_INTERVAL = 2000; // 2 segundos
+        const MAX_POLLING_TIME = 300000; // 5 minutos máximo
+        
+        const stepIcons = [
+            { // Step 1: Upload
+                svg: '<path fill="#fff" d="M17.125 6.17L15.079.535c-.151-.416-.595-.637-.989-.492L.492 5.006c-.394.144-.593.597-.441 1.013l2.156 5.941V8.777c0-1.438 1.148-2.607 2.56-2.607H8.36l4.285-3.008l2.479 3.008zM19.238 8H4.767a.76.76 0 0 0-.762.777v9.42c.001.444.343.803.762.803h14.471c.42 0 .762-.359.762-.803v-9.42A.76.76 0 0 0 19.238 8M18 17H6v-2l1.984-4.018l2.768 3.436l2.598-2.662l3.338-1.205L18 14z" stroke-width="0.5" stroke="#fff"/>' 
+            },
+            { // Step 2: Brain
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24"><g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="1.5"><path stroke-linejoin="round" d="M12 4.5a2.5 2.5 0 0 0-5 0a3 3 0 0 0-2.567 4.553a3.001 3.001 0 0 0 0 5.893A3 3 0 0 0 7 19.5a2.5 2.5 0 0 0 5 0m0 0a2.5 2.5 0 0 0 5 0a3 3 0 0 0 2.567-4.554a3.001 3.001 0 0 0 0-5.893A3 3 0 0 0 17 4.5a2.5 2.5 0 0 0-5 0"/><path d="M10.487 7v1.98M7 10.5h2.052m5.971 0h2.052m-2.052 2.974h2.052M7 13.475h2.052m1.435 1.545V17m3.025-1.98V17m-.01-10v1.98m-3.45 5.988h3.971a1 1 0 0 0 1-1V9.98a1 1 0 0 0-1-1h-3.971a1 1 0 0 0-1 1v3.988a1 1 0 0 0 1 1Z"/></g></svg>' 
+            },
+            { // Step 3: Report
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 32 32"><g fill="none" stroke="#fff" stroke-width="1"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9h4m-4 7h12m-12 4h12m-12 4h4m-6 5h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v22a2 2 0 0 0 2 2"/><circle cx="22" cy="9" r=".5" fill="#fff"/></g></svg>' 
+            }
+        ];
+
+        const steps = [
+            { duration: 6000, icon: 'upload' },
+            { duration: 50000, icon: 'brain' },
+            { duration: 4000, icon: 'report' }
+        ];
+
+        let currentStep = 0;
+        let progress = 0;
+        let startTime = Date.now();
+        let pollingStartTime = null;
+        let taskId = document.getElementById('task-id').value;
+        let evaluationId = document.getElementById('evaluation-id').value;
+        let patientId = document.getElementById('patient-id').value;
+
+        console.log('📋 Initial values:');
+        console.log('   taskId:', taskId);
+        console.log('   evaluationId:', evaluationId);
+        console.log('   patientId:', patientId);
+
+        // Initialize
+        updateStepUI(0);
+        updateMainIcon(0);
+        startProgressAnimation();
+
+        function updateMainIcon(stepIndex) {
+            // Actualizar el ícono principal en icon-wrapper
+            const mainIconSvg = document.getElementById('main-icon-svg');
+            if (stepIndex < 3 && mainIconSvg) {
+                mainIconSvg.innerHTML = stepIcons[stepIndex].svg;
+            }
+        }
+
+        function updateStepUI(stepIndex) {
+            // Actualizar todos los pasos
+            for (let i = 0; i < 3; i++) {
+                const step = document.getElementById(`step-${i}`);
+                const stepIcon = step.querySelector('.step-icon');
+                const stepSvg = stepIcon.querySelector('svg');
+                
+                // Remover todas las clases de estado del contenedor
+                step.classList.remove('active', 'completed', 'pending');
+                // Remover todas las clases de estado del ícono
+                stepIcon.classList.remove('loading', 'completed', 'pending');
+                
+                if (i < stepIndex) {
+                    // Pasos completados
+                    step.classList.add('completed');
+                    stepIcon.classList.add('completed');
+                    stepSvg.innerHTML = '<g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12l2 2l4-4"/></g>';
+                    stepSvg.style.animation = 'none';
+                } else if (i === stepIndex) {
+                    // Paso actual (en progreso)
+                    step.classList.add('active');
+                    stepIcon.classList.add('loading');
+                    stepSvg.innerHTML = '<g stroke="white" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="12" cy="12" r="8" opacity="0.3"/><path d="M20 12a8 8 0 0 1-8 8"><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></g>';
+                    stepSvg.style.animation = 'none';
+                } else {
+                    // Pasos pendientes
+                    step.classList.add('pending');
+                    stepIcon.classList.add('pending');
+                    stepSvg.style.animation = 'none';
+                }
+            }
+        }
+
+        function updateProgress(value) {
+            progress = Math.min(value, 100);
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressPercent').textContent = Math.round(progress);
+        }
+
+        function startProgressAnimation() {
+            const stepDuration = steps[currentStep].duration;
+            const increment = 100 / stepDuration * 50; // Update every 50ms
+
+            const timer = setInterval(() => {
+                progress += increment;
+
+                if (progress >= 100) {
+                    clearInterval(timer);
+                    progress = 0;
+
+                    if (currentStep < steps.length - 1) {
+                        currentStep++;
+                        updateStepUI(currentStep);
+                        updateMainIcon(currentStep);
+                        startProgressAnimation();
+                    } else {
+                        // La animación completó, pero esperamos por polling
+                        checkTaskStatus();
+                    }
+                } else {
+                    updateProgress(progress);
+                }
+            }, 50);
+        }
+
+        // Polling para verificar el estado de la tarea
+        let analysisData = null;
+        
+        function checkTaskStatus() {
+            if (!pollingStartTime) {
+                pollingStartTime = Date.now();
+            }
+
+            // Llamar al endpoint Django que verifica estado en la API ML
+            fetch(`/api/check-task-status/${taskId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('📊 Task status:', data);
+
+                    if (data.success) {
+                        if (data.status === 'completed') {
+                            // Análisis completado - guardar resultados y redirigir
+                            analysisData = data;
+                            onAnalysisComplete(data);
+                        } else if (data.status === 'failed') {
+                            // Error en análisis
+                            onAnalysisFailed(data.message || 'Error desconocido en análisis');
+                        } else {
+                            // Aún procesando - seguir monitoreando
+                            const progress = data.progress || 0;
+                            updateProgress(progress);
+                            
+                            const elapsedTime = Date.now() - pollingStartTime;
+                            if (elapsedTime < MAX_POLLING_TIME) {
+                                console.log(`⏳ Proceso en curso... ${progress}% completado`);
+                                setTimeout(checkTaskStatus, POLLING_INTERVAL);
+                            } else {
+                                onAnalysisFailed('Timeout: El análisis tardó más de 5 minutos');
+                            }
+                        }
+                    } else {
+                        // Error en la solicitud
+                        console.error('❌ Error:', data.error);
+                        const elapsedTime = Date.now() - pollingStartTime;
+                        if (elapsedTime < MAX_POLLING_TIME) {
+                            setTimeout(checkTaskStatus, POLLING_INTERVAL);
+                        } else {
+                            onAnalysisFailed(data.error || 'No se pudo obtener el estado');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error checking task status:', error);
+                    const elapsedTime = Date.now() - pollingStartTime;
+                    if (elapsedTime < MAX_POLLING_TIME) {
+                        setTimeout(checkTaskStatus, POLLING_INTERVAL);
+                    } else {
+                        onAnalysisFailed('Error de conexión al servidor');
+                    }
+                });
+        }
+
+        function onAnalysisComplete(apiData) {
+            console.log('✅ Analysis completed!', apiData);
+            console.log('   patientId:', patientId);
+            console.log('   evaluationId:', evaluationId);
+            
+            // Completar la barra al 100%
+            updateProgress(100);
+            updateStepUI(3);
+
+            // Esperar un poco y redirigir a resultados
+            setTimeout(() => {
+                // Redirigir a página de resultados
+                const resultsUrl = `/patient/${patientId}/results/${evaluationId}/`;
+                console.log('🔄 Redirecting to:', resultsUrl);
+                window.location.href = resultsUrl;
+            }, 1500);
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function onAnalysisFailed(error) {
+            console.error('Analysis failed:', error);
+            document.querySelector('.processing-card').innerHTML = `
+                <div class="error-content">
+                    <div class="error-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"><path fill="currentColor" d="M12.713 16.713Q13 16.425 13 16t-.288-.712T12 15t-.712.288T11 16t.288.713T12 17t.713-.288m0-4Q13 12.425 13 12V8q0-.425-.288-.712T12 7t-.712.288T11 8v4q0 .425.288.713T12 13t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"/></svg>
+                    </div>
+                    <h2>Error en el análisis</h2>
+                    <p>${error}</p>
+                    <a href="/patient/${patientId}/" class="btn-retry">Volver al paciente</a>
+                </div>
+            `;
+        }
+
+        // Iniciar polling después de completar la animación
+        setTimeout(() => {
+            checkTaskStatus();
+        }, steps.reduce((sum, s) => sum + s.duration, 0));
+    </script>
+</body>
+</html>

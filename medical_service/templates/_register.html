@@ -1,0 +1,152 @@
+
+<div class="modal-overlay modal-register" id="registerModal" style="display: none;">
+    <div class="modal-content" role="dialog" aria-labelledby="registerTitle" aria-describedby="registerDesc">
+        <div class="modal-header">
+            <div class="logo-new-patient">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1.2em" height="1.2em" viewBox="0 0 24 24"><g fill="none" fill-rule="evenodd"><path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/><path fill="#2563eb" d="M16 14a5 5 0 0 1 5 5v2a1 1 0 1 1-2 0v-2a3 3 0 0 0-3-3H8a3 3 0 0 0-3 3v2a1 1 0 1 1-2 0v-2a5 5 0 0 1 5-5zm4-6a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1h-1a1 1 0 1 1 0-2h1V9a1 1 0 0 1 1-1m-8-6a5 5 0 1 1 0 10a5 5 0 0 1 0-10m0 2a3 3 0 1 0 0 6a3 3 0 0 0 0-6"/></g></svg>
+            </div>
+            <div class="header-title">
+                <h2 id="registerTitle" class="modal-title">Registrar Nuevo Paciente</h2>
+            </div>
+        </div>
+        <div class="header-text">
+            <p>Complete los datos del paciente para iniciar una nueva evaluación.</p>
+        </div>
+        <div id="registerDesc" class="modal-body">
+            <!-- Register Form -->
+            <form method="POST" id="patientFormModal" class="new-patient-form" enctype="multipart/form-data" action="{% url 'dashboard' %}">
+                {% csrf_token %}
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.first_name.id_for_label }}" >Primer Nombre *</label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                            <small class="error-text">{{ form.first_name.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.middle_name.id_for_label }}">Segundo Nombre</label>
+                        {{ form.middle_name }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.last_name.id_for_label }}">Apellidos *</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                        <small class="error-text">{{ form.last_name.errors.0 }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="{{ form.age.id_for_label }}">Edad *</label>
+                        {{ form.age }}
+                        <small class="error-text" id="ageErrorMessage" style="display: none;"></small>
+                        {% if form.age.errors %}
+                            <small class="error-text">{{ form.age.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.identification.id_for_label }}">Identificación *</label>
+                        {{ form.identification }}
+                        {% if form.identification.errors %}
+                            <small class="error-text">{{ form.identification.errors.0 }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="alert-register">
+                    <p>Después de registrar al paciente, podrá proceder a evaluar las imágenes CTC inmediatamente.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeRegisterModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Registrar y continuar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const registerModal = document.getElementById('registerModal');
+    const closeBtn = document.getElementById('closeRegisterModal');
+    const cancelBtn = document.getElementById('cancelRegisterBtn');
+    const patientFormModal = document.getElementById('patientFormModal');
+    const ageInput = document.querySelector('input[name="age"]');
+    const ageErrorMessage = document.getElementById('ageErrorMessage');
+    
+    // Validar edad en tiempo real
+    function validateAge(age) {
+        const ageNum = parseInt(age);
+        
+        if (!age) {
+            ageErrorMessage.style.display = 'none';
+            return true;
+        }
+        
+        if (ageNum > 123) {
+            ageErrorMessage.textContent = 'La edad no puede ser mayor a 123 años';
+            ageErrorMessage.style.display = 'block';
+            return false;
+        }
+        
+        if (ageNum < 0) {
+            ageErrorMessage.textContent = 'La edad no puede ser negativa';
+            ageErrorMessage.style.display = 'block';
+            return false;
+        }
+        
+        ageErrorMessage.style.display = 'none';
+        return true;
+    }
+    
+    // Escuchar cambios en el input de edad
+    if (ageInput) {
+        ageInput.addEventListener('input', (e) => {
+            validateAge(e.target.value);
+        });
+    }
+    
+    // Prevenir envío del formulario si la edad es inválida
+    patientFormModal.addEventListener('submit', (e) => {
+        if (!validateAge(ageInput.value)) {
+            e.preventDefault();
+            ageInput.focus();
+            return false;
+        }
+    });
+    
+    // Encontrar el botón de "Nuevo paciente"
+    const newPatientBtns = document.querySelectorAll('button');
+    
+    newPatientBtns.forEach(btn => {
+        if (btn.textContent.includes('Nuevo paciente')) {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('✓ Abriendo modal');
+                // Limpiar errores previos
+                ageErrorMessage.style.display = 'none';
+                patientFormModal.reset();
+                registerModal.style.display = 'flex';
+            });
+        }
+    });
+    
+    // Cerrar modal
+    const closeModal = () => {
+        registerModal.style.display = 'none';
+    };
+    
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    
+    window.addEventListener('click', (e) => {
+        if (e.target === registerModal) closeModal();
+    });
+    
+    // Dejar que el formulario se envíe normalmente
+    console.log('✓ Script de registro listo');
+</script>
