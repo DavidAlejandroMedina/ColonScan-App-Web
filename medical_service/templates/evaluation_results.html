@@ -140,7 +140,7 @@
                                             {% for polyp in result.predictions.0.polyps_detected %}
                                                 <li>
                                                     <strong>{{ polyp.polyp_type }}</strong> - 
-                                                    Slice #{{ polyp.slice_number }} 
+                                                    <!-- Slice #{{ polyp.slice_number }}  -->
                                                     (Probabilidad: {{ polyp.probability|floatformat:2 }})
                                                     {% if polyp.position %}
                                                         - Posición: {{ polyp.position|title }}

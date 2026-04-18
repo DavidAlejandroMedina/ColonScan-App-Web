@@ -29,6 +29,27 @@ DEBUG = os.getenv('DEBUG') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
+# Cloud Run/GCP proxy settings
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Build trusted CSRF origins from env or ALLOWED_HOSTS
+_csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if _csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_origins_env.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+    for host in ALLOWED_HOSTS:
+        host = host.strip()
+        if not host or host == '*':
+            continue
+        if host.startswith('.'):
+            host = host[1:]
+        CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
 
 # Application definition
 
@@ -137,3 +158,11 @@ LOGOUT_REDIRECT_URL = '/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'medical_service/static'),
 ]
+
+
+# Upload settings for large medical ZIP files (Compute Engine deployment)
+MAX_UPLOAD_MB = int(os.getenv('MAX_UPLOAD_MB', '1024'))
+DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_MB * 1024 * 1024
+
+# Keep small files in memory and stream larger ones to temporary disk files.
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv('FILE_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024)))

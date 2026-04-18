@@ -71,7 +71,7 @@
                 <div class="info-box">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18px" height="18px" viewBox="0 0 48 48"><g fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="4"><path d="M24 44c11.046 0 20-8.954 20-20S35.046 4 24 4S4 12.954 4 24s8.954 20 20 20Z"/><path stroke-linecap="round" d="M24.008 12v12.01l8.479 8.48"/></g></svg>
                     <p class="info-text">
-                        Este proceso puede tomar entre 2-3 minutos. Por favor, no cierre esta ventana.
+                        Este proceso puede tomar varios minutos segun la cantidad de imagenes. Por favor, no cierre esta ventana.
                     </p>
                 </div>
 
@@ -87,7 +87,7 @@
         // Configuration
         const API_BASE_URL = 'http://localhost:8001/api/v1';
         const POLLING_INTERVAL = 2000; // 2 segundos
-        const MAX_POLLING_TIME = 300000; // 5 minutos máximo
+        const MAX_POLLING_TIME = 900000; // 15 minutos máximo
         
         const stepIcons = [
             { // Step 1: Upload
@@ -102,16 +102,20 @@
         ];
 
         const steps = [
-            { duration: 6000, icon: 'upload' },
-            { duration: 50000, icon: 'brain' },
-            { duration: 4000, icon: 'report' }
+            { duration: 60000, icon: 'upload' },
+            { duration: 180000, icon: 'brain' },
+            { duration: 6000, icon: 'report' }
         ];
+        const TOTAL_VISUAL_DURATION = steps.reduce((sum, s) => sum + s.duration, 0);
+        const PRE_TASK_MAX_ELAPSED = steps[0].duration + steps[1].duration;
 
         let currentStep = 0;
         let progress = 0;
-        let startTime = Date.now();
+        let visualStartTime = Date.now();
+        let visualAnimationStopped = false;
         let pollingStartTime = null;
         let taskId = document.getElementById('task-id').value;
+        let hasTaskIdAssigned = !!(taskId && taskId !== 'pending');
         let evaluationId = document.getElementById('evaluation-id').value;
         let patientId = document.getElementById('patient-id').value;
 
@@ -124,6 +128,14 @@
         updateStepUI(0);
         updateMainIcon(0);
         startProgressAnimation();
+        startTaskMonitoring();
+
+        // Al volver a primer plano, forzar recálculo inmediato del progreso visual.
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                renderVisualProgress();
+            }
+        });
 
         function updateMainIcon(stepIndex) {
             // Actualizar el ícono principal en icon-wrapper
@@ -173,35 +185,111 @@
         }
 
         function startProgressAnimation() {
-            const stepDuration = steps[currentStep].duration;
-            const increment = 100 / stepDuration * 50; // Update every 50ms
+            visualStartTime = Date.now();
+            visualAnimationStopped = false;
 
-            const timer = setInterval(() => {
-                progress += increment;
-
-                if (progress >= 100) {
-                    clearInterval(timer);
-                    progress = 0;
-
-                    if (currentStep < steps.length - 1) {
-                        currentStep++;
-                        updateStepUI(currentStep);
-                        updateMainIcon(currentStep);
-                        startProgressAnimation();
-                    } else {
-                        // La animación completó, pero esperamos por polling
-                        checkTaskStatus();
-                    }
-                } else {
-                    updateProgress(progress);
+            function tick() {
+                if (visualAnimationStopped) {
+                    return;
                 }
-            }, 50);
+
+                renderVisualProgress();
+
+                if (!visualAnimationStopped) {
+                    requestAnimationFrame(tick);
+                }
+            }
+
+            requestAnimationFrame(tick);
+        }
+
+        function renderVisualProgress() {
+            const elapsed = Date.now() - visualStartTime;
+            const clampedElapsed = Math.min(elapsed, TOTAL_VISUAL_DURATION);
+            const effectiveElapsed = hasTaskIdAssigned
+                ? clampedElapsed
+                : Math.min(clampedElapsed, Math.max(PRE_TASK_MAX_ELAPSED - 1, 0));
+
+            // Determinar step actual por tiempo acumulado real.
+            let accumulated = 0;
+            let stepIndex = steps.length - 1;
+            for (let i = 0; i < steps.length; i++) {
+                const nextAccumulated = accumulated + steps[i].duration;
+                if (effectiveElapsed < nextAccumulated) {
+                    stepIndex = i;
+                    break;
+                }
+                accumulated = nextAccumulated;
+            }
+
+            if (stepIndex !== currentStep) {
+                currentStep = stepIndex;
+                updateStepUI(currentStep);
+                updateMainIcon(currentStep);
+            }
+
+            const visualPercent = (effectiveElapsed / TOTAL_VISUAL_DURATION) * 100;
+            // No retroceder si ya tenemos progreso mayor por datos reales de la API.
+            updateProgress(Math.max(progress, visualPercent));
+
+            if (hasTaskIdAssigned && clampedElapsed >= TOTAL_VISUAL_DURATION) {
+                visualAnimationStopped = true;
+            }
+        }
+
+        function markTaskIdAssigned(newTaskId) {
+            taskId = newTaskId;
+            document.getElementById('task-id').value = taskId;
+
+            if (!hasTaskIdAssigned) {
+                hasTaskIdAssigned = true;
+                // Habilitar y arrancar la fase final solo cuando llega task_id.
+                visualStartTime = Date.now() - PRE_TASK_MAX_ELAPSED;
+                visualAnimationStopped = false;
+            }
+        }
+
+        function startTaskMonitoring() {
+            if (taskId && taskId !== 'pending') {
+                checkTaskStatus();
+                return;
+            }
+            waitForTaskId();
+        }
+
+        function waitForTaskId() {
+            fetch(`/api/evaluation-task/${evaluationId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.task_id) {
+                        markTaskIdAssigned(data.task_id);
+                        console.log('🆔 Task ID asignado:', taskId);
+                        checkTaskStatus();
+                        return;
+                    }
+
+                    if (data.success && data.analysis_status === 'failed') {
+                        onAnalysisFailed('No se pudo iniciar el análisis en la API');
+                        return;
+                    }
+
+                    setTimeout(waitForTaskId, POLLING_INTERVAL);
+                })
+                .catch(error => {
+                    console.error('❌ Error obteniendo task_id por evaluación:', error);
+                    setTimeout(waitForTaskId, POLLING_INTERVAL);
+                });
         }
 
         // Polling para verificar el estado de la tarea
         let analysisData = null;
         
         function checkTaskStatus() {
+            if (!taskId || taskId === 'pending') {
+                waitForTaskId();
+                return;
+            }
+
             if (!pollingStartTime) {
                 pollingStartTime = Date.now();
             }
@@ -302,10 +390,7 @@
             `;
         }
 
-        // Iniciar polling después de completar la animación
-        setTimeout(() => {
-            checkTaskStatus();
-        }, steps.reduce((sum, s) => sum + s.duration, 0));
+        // El monitoreo real se inicia con startTaskMonitoring().
     </script>
 </body>
 </html>

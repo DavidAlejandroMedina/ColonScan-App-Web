@@ -23,6 +23,7 @@ urlpatterns = [
     path('patient/<uuid:patient_id>/results/<uuid:evaluation_id>/', views.evaluation_results, name='evaluation_results_detail'),
     path('evaluation/<uuid:evaluation_id>/update_task/', views.update_evaluation_task_id, name='update_task_id'),
     path('evaluation/<uuid:evaluation_id>/save_results/', views.save_analysis_results, name='save_results'),
+    path('api/evaluation-task/<uuid:evaluation_id>/', views.get_evaluation_task_status, name='get_evaluation_task_status'),
     path('api/check-task-status/<path:task_id>/', views.check_task_status, name='check_task_status'),
     path('logout/', views.logout_view, name='logout'),
 ]

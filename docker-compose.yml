@@ -22,7 +22,7 @@ services:
     command: >
       sh -c "python manage.py migrate &&
              python manage.py collectstatic --noinput &&
-             gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class sync --worker-connections 1000 --timeout 300 --graceful-timeout 30 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 colonscan_project.wsgi:application"
+             gunicorn --bind 0.0.0.0:8000 --workers 4 --worker-class sync --worker-connections 1000 --timeout 900 --graceful-timeout 60 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 colonscan_project.wsgi:application"
     environment:
       DEBUG: ${DEBUG:-False}
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
@@ -33,8 +33,13 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      # Google Cloud Storage
+      GCS_ENABLED: ${GCS_ENABLED:-True}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME}
+      GCS_EVIDENCE_PREFIX: ${GCS_EVIDENCE_PREFIX:-evaluations/ctc_scans}
+      # API del modelo de análisis
       API_URL: ${API_URL:-http://localhost:8001/api/v1/analyse}
-      API_TIMEOUT: ${API_TIMEOUT:-300}
+      API_TIMEOUT: ${API_TIMEOUT:-900}
       API_KEY: ${API_KEY:-}
       API_ENABLE_SSL_VERIFY: ${API_ENABLE_SSL_VERIFY:-False}
       PYTHONUNBUFFERED: "1"
@@ -45,6 +50,7 @@ services:
         condition: service_healthy
     volumes:
       - ./:/app
+      - gcloud-config:/home/appuser/.config/gcloud
     healthcheck:
       test: ["CMD", "python", "manage.py", "check", "--database", "default"]
       interval: 30s
@@ -62,6 +68,7 @@ services:
 
 volumes:
   postgres_data:
+  gcloud-config:
 
 networks:
   default:

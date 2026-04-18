@@ -9,13 +9,16 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 import requests
 import os
+import threading
+from urllib.parse import quote
 from dotenv import load_dotenv
+from datetime import datetime
 from .models import Patient, Evaluation, UploadedFile
 from .forms import EvaluationForm, PatientForm
+from .gcs_service import gcs_service
 import random
 import string
 import logging
-from datetime import datetime
 
 # Cargar variables de entorno
 load_dotenv()
@@ -74,12 +77,10 @@ def dashboard_view(request):
                 print(f"   ID: {patient.id}")
                 print(f"   Nombre: {patient.first_name} {patient.last_name}")
                 print(f"   Patient ID: {patient.identification}")
-                
-                # Redirigir a dashboard con parámetro de éxito y nombre del paciente
-                from urllib.parse import urlencode
-                params = urlencode({'patient_created': '1', 'patient_name': patient.first_name})
-                redirect_url = f"{reverse('dashboard')}?{params}"
-                print(f"🔀 Redirigiendo a: {redirect_url}")
+
+                # Redirigir directamente a evaluación del paciente recién creado
+                redirect_url = reverse('evaluation', kwargs={'patient_id': patient.id})
+                print(f"🔀 Redirigiendo a evaluación: {redirect_url}")
                 return redirect(redirect_url)
             
             except Exception as e:
@@ -117,17 +118,22 @@ def dashboard_view(request):
 
 def login_view(request):
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=email, password=password)
-        
-        if user is not None:
-            login(request, user)
-            return redirect(f"{reverse('dashboard')}?login_success=1")
-        else:
+        try:
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+
+            user = authenticate(request, username=email, password=password)
+
+            if user is not None:
+                login(request, user)
+                return redirect(f"{reverse('dashboard')}?login_success=1")
+
             messages.error(request, 'Credenciales incorrectas')
             return redirect('login')  # Redirect to display message and consume it
+        except Exception:
+            logger.exception("Unexpected error during login")
+            messages.error(request, 'Ocurrió un error al iniciar sesión. Intenta nuevamente.')
+            return redirect('login')
             
     return render(request, 'login.html')
 
@@ -152,7 +158,14 @@ def patient_detail(request, patient_id):
 
 @login_required
 def evaluation(request, patient_id):
-    """Vista para la evaluación con imágenes CTC"""
+    """Vista para la evaluación con imágenes CTC
+    
+    FLUJO NUEVO CON GCS:
+    1. Recibe archivo ZIP
+    2. Sube a Google Cloud Storage
+    3. Obtiene URL firmada
+    4. Envía URL a la API (no el archivo)
+    """
     print(f"📸 Accediendo a evaluación para paciente ID: {patient_id}")
     patient = get_object_or_404(Patient, id=patient_id)
     
@@ -160,7 +173,6 @@ def evaluation(request, patient_id):
     
     # Crear el formulario (vacío para GET, con datos para POST)
     form = EvaluationForm(request.POST or None, request.FILES or None)
-    print(f"📝 Formulario creado: {form.fields['study_date'].initial}")
     
     if request.method == 'POST':
         print(f"📸 Procesando evaluación para paciente {patient.first_name}")
@@ -168,7 +180,6 @@ def evaluation(request, patient_id):
         # Procesar el archivo ZIP
         zip_file = request.FILES.get('zip_file')
         print(f"   Archivo ZIP recibido: {zip_file is not None}")
-        print(f"   Datos POST: {request.POST.keys()}")
         
         if form.is_valid() and zip_file:
             print(f"✅ Formulario válido y archivo ZIP recibido")
@@ -183,12 +194,86 @@ def evaluation(request, patient_id):
             
             print(f"✅ Evaluación creada: {evaluation.id}")
             
-            # Enviar el ZIP a la API del modelo
+            # PASO 1: Subir archivo a Google Cloud Storage
             try:
-                # Leer el contenido del archivo ZIP
-                zip_file.seek(0)  # Reiniciar posición del archivo
+                print(f"\n📤 PASO 1: Subiendo archivo a Google Cloud Storage...")
                 
-                # Obtener configuración de la API desde variables de entorno
+                # Subir archivo a GCS usando la instancia global
+                zip_file.seek(0)  # Reiniciar posición
+                gcs_result = gcs_service.upload_file(
+                    zip_file,
+                    evaluation_id=str(evaluation.id),
+                    filename=zip_file.name
+                )
+                
+                if not gcs_result['success']:
+                    print(f"❌ Error al subir a GCS: {gcs_result['error']}")
+                    messages.error(request, f'Error al subir archivo a almacenamiento: {gcs_result.get("error", "Error desconocido")}')
+                    evaluation.delete()  # Limpiar evaluación si falló la carga
+                    return render(request, 'evaluation.html', {'patient': patient, 'form': form})
+
+                if not gcs_result.get('verified', False):
+                    print("❌ Archivo no verificado en bucket, se cancela envío a API")
+                    messages.error(request, 'No se pudo verificar el archivo en el bucket. Intenta nuevamente.')
+                    evaluation.delete()
+                    return render(request, 'evaluation.html', {'patient': patient, 'form': form})
+                
+                # Elegir la mejor referencia disponible del archivo en GCS
+                # Prioridad: signed_url -> public_url (si es público) -> gs_uri
+                gcs_file_url = (
+                    gcs_result.get('signed_url')
+                    or gcs_result.get('public_url')
+                    or gcs_result.get('gs_uri')
+                )
+
+                if not gcs_file_url:
+                    print("❌ No se obtuvo ninguna referencia de archivo en GCS")
+                    messages.error(request, 'No se pudo obtener la URL/URI del archivo en GCS')
+                    evaluation.delete()
+                    return render(request, 'evaluation.html', {'patient': patient, 'form': form})
+
+                if gcs_result.get('signed_url'):
+                    file_url_type = 'signed_url'
+                elif gcs_result.get('public_url'):
+                    file_url_type = 'public_url'
+                else:
+                    file_url_type = 'gs_uri'
+
+                # La API no soporta gs://; convertir a URL HTTPS de GCS.
+                if file_url_type == 'gs_uri':
+                    encoded_blob_name = quote(gcs_result['blob_name'], safe='/')
+                    gcs_file_url = f"https://storage.googleapis.com/{os.getenv('GCS_BUCKET_NAME', '')}/{encoded_blob_name}"
+                    file_url_type = 'https_gcs'
+                    print("ℹ️ Convirtiendo gs:// a https://storage.googleapis.com/... para compatibilidad con la API")
+
+                # Guardar información de GCS en la evaluación de forma tolerante a diferencias de esquema
+                supports_gcs_file_url = True
+                max_url_len = 2000
+                try:
+                    max_url_len = evaluation._meta.get_field('gcs_file_url').max_length or 2000
+                except Exception:
+                    supports_gcs_file_url = False
+                    print("⚠️ Modelo Evaluation sin campo gcs_file_url; se guarda solo gcs_blob_name")
+
+                if supports_gcs_file_url:
+                    if gcs_file_url and len(gcs_file_url) <= max_url_len:
+                        evaluation.gcs_file_url = gcs_file_url
+                    else:
+                        evaluation.gcs_file_url = None
+                        print(f"⚠️ gcs_file_url excede {max_url_len} caracteres; se guarda solo gcs_blob_name")
+
+                evaluation.gcs_blob_name = gcs_result['blob_name']
+                evaluation.save()
+                
+                print(f"✅ Archivo subido a GCS")
+                print(f"   Blob: {gcs_result['blob_name']}")
+                print("   Verificación bucket: OK")
+                print(f"   Tipo de referencia: {file_url_type}")
+                print(f"   URL (primeros 80 chars): {gcs_file_url[:80]}...")
+                
+                # PASO 2: Enviar URL a la API del modelo de IA
+                print(f"\n📡 PASO 2: Enviando URL a la API de análisis...")
+                
                 api_url = os.getenv('API_URL')
                 api_timeout = int(os.getenv('API_TIMEOUT', '300'))
                 api_key = os.getenv('API_KEY', '')
@@ -196,102 +281,126 @@ def evaluation(request, patient_id):
                 
                 # Validar que API_URL esté configurado
                 if not api_url:
-                    print("❌ ERROR: API_URL no está configurado en variables de entorno")
+                    print("❌ ERROR: API_URL no está configurado")
                     messages.error(request, 'Error de configuración: API_URL no definida')
                     return render(request, 'evaluation.html', {'patient': patient, 'form': form})
                 
                 # Preparar headers
-                headers = {'Authorization': f'Bearer {request.user.id}'}
+                headers = {
+                    'Authorization': f'Bearer {request.user.id}',
+                    'Content-Type': 'application/json'
+                }
                 if api_key:
                     headers['X-API-Key'] = api_key
                 
-                # Preparar para envío a API
-                files = {'file': (zip_file.name, zip_file, 'application/zip')}
+                # Preparar datos para enviar a API (schema exacto de /api/v1/analyze)
+                payload = {
+                    'file_url': gcs_file_url,  # URL firmada del archivo en GCS
+                    'evaluation_id': str(evaluation.id),
+                    'patient_id': str(patient.id),
+                    'doctor_id': str(request.user.id),
+                    'study_date': str(evaluation.study_date),
+                    'observations': evaluation.observations or ''
+                }
                 
-                print(f"📡 Enviando archivo a API: {api_url}")
-                print(f"   Tamaño: {zip_file.size} bytes")
+                print(f"📤 Enviando a API: {api_url}")
+                print(f"   Payload: {json.dumps({k: v if k != 'file_url' else v[:50]+'...' for k,v in payload.items()})}")
                 print(f"   Timeout: {api_timeout}s")
-                print(f"   SSL Verify: {ssl_verify}")
-                
-                # Intentar conexión con reintentos
-                max_retries = 3
-                for attempt in range(max_retries):
-                    try:
-                        print(f"   Intento {attempt + 1}/{max_retries}...")
-                        response = requests.post(
-                            api_url, 
-                            files=files, 
-                            headers=headers, 
-                            timeout=api_timeout,
-                            verify=ssl_verify
-                        )
-                        
-                        print(f"   Status Code: {response.status_code}")
-                        print(f"   Response Headers: {response.headers}")
-                        print(f"   Response Body (primeros 500 chars): {response.text[:500]}")
-                        
-                        if response.status_code == 200:
-                            result = response.json()
-                            task_id = result.get('task_id')
-                            
-                            if task_id:
-                                evaluation.task_id = task_id
-                                evaluation.analysis_status = 'processing'
-                                evaluation.save()
-                                print(f"✅ Archivo enviado a la API. Task ID: {task_id}")
-                                return redirect('processing', patient_id=patient.id, task_id=task_id, evaluation_id=evaluation.id)
-                            else:
-                                print(f"⚠️  API respondió 200 pero sin task_id. Response: {result}")
-                                messages.error(request, 'API respondió pero sin task_id. Intenta de nuevo.')
-                                break
-                        elif response.status_code == 202:
-                            # Accepted - procesamiento en background
-                            result = response.json()
-                            task_id = result.get('task_id')
-                            if task_id:
-                                evaluation.task_id = task_id
-                                evaluation.analysis_status = 'processing'
-                                evaluation.save()
-                                print(f"✅ Archivo aceptado para procesamiento. Task ID: {task_id}")
-                                return redirect('processing', patient_id=patient.id, task_id=task_id, evaluation_id=evaluation.id)
-                        else:
+
+                def _submit_to_api_in_background(evaluation_id, api_url_bg, headers_bg, payload_bg, api_timeout_bg, ssl_verify_bg):
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            print(f"   [BG] Intento {attempt + 1}/{max_retries} para evaluación {evaluation_id}...")
+                            response = requests.post(
+                                api_url_bg,
+                                json=payload_bg,
+                                headers=headers_bg,
+                                timeout=(30, api_timeout_bg),
+                                verify=ssl_verify_bg
+                            )
+
+                            print(f"   [BG] Status Code: {response.status_code}")
+                            if response.status_code in [200, 202]:
+                                print(f"   [BG] Respuesta API (preview): {response.text[:300]}")
+                                result = response.json()
+                                task_id = (
+                                    result.get('task_id')
+                                    or result.get('taskId')
+                                    or result.get('id')
+                                    or (result.get('data', {}) or {}).get('task_id')
+                                    or (result.get('data', {}) or {}).get('taskId')
+                                    or (result.get('result', {}) or {}).get('task_id')
+                                    or (result.get('result', {}) or {}).get('taskId')
+                                    or response.headers.get('X-Task-Id')
+                                )
+
+                                evaluation_bg = Evaluation.objects.get(id=evaluation_id)
+                                if task_id:
+                                    evaluation_bg.task_id = task_id
+                                    evaluation_bg.analysis_status = 'processing'
+                                    evaluation_bg.save(update_fields=['task_id', 'analysis_status'])
+                                    print(f"✅ [BG] URL enviada a API. Task ID: {task_id}")
+                                else:
+                                    evaluation_bg.analysis_status = 'failed'
+                                    evaluation_bg.save(update_fields=['analysis_status'])
+                                    print(f"❌ [BG] API respondió sin task_id para evaluación {evaluation_id}")
+                                return
+
                             if attempt < max_retries - 1:
-                                print(f"⚠️  Intento {attempt + 1} falló con status {response.status_code}. Reintentando...")
+                                print(f"⚠️  [BG] Intento {attempt + 1} falló (status {response.status_code}). Reintentando...")
                                 import time
-                                time.sleep(2 ** attempt)  # Backoff exponencial
+                                time.sleep(2 ** attempt)
                                 continue
-                            else:
-                                print(f"❌ Error en API después de {max_retries} intentos: {response.status_code}")
-                                print(f"   Respuesta: {response.text}")
-                                messages.error(request, f'Error al procesar el archivo: {response.status_code}')
-                                break
-                    except requests.exceptions.Timeout:
-                        if attempt < max_retries - 1:
-                            print(f"⚠️  Timeout en intento {attempt + 1}. Reintentando...")
-                            continue
-                        else:
-                            raise
-                    
+
+                            print(f"❌ [BG] Error API: {response.status_code}")
+                            print(f"   [BG] Respuesta: {response.text[:1000]}")
+                            Evaluation.objects.filter(id=evaluation_id).update(analysis_status='failed')
+                            return
+                        except requests.exceptions.Timeout:
+                            if attempt < max_retries - 1:
+                                print(f"⚠️  [BG] Timeout en intento {attempt + 1}")
+                                continue
+                            Evaluation.objects.filter(id=evaluation_id).update(analysis_status='failed')
+                            print(f"❌ [BG] Timeout final para evaluación {evaluation_id}")
+                            return
+                        except Exception as bg_error:
+                            Evaluation.objects.filter(id=evaluation_id).update(analysis_status='failed')
+                            print(f"❌ [BG] Error inesperado enviando a API: {bg_error}")
+                            return
+
+                background_thread = threading.Thread(
+                    target=_submit_to_api_in_background,
+                    args=(str(evaluation.id), api_url, headers.copy(), payload.copy(), api_timeout, ssl_verify),
+                    daemon=True
+                )
+                background_thread.start()
+
+                print("✅ Solicitud a API iniciada en segundo plano. Redirigiendo a processing...")
+                return redirect(
+                    'processing',
+                    patient_id=patient.id,
+                    task_id='pending',
+                    evaluation_id=evaluation.id
+                )
+                
             except requests.exceptions.Timeout as e:
-                print(f"❌ Timeout en la API después de retries: {str(e)}")
-                messages.error(request, f'La API tardó demasiado en responder (timeout: {api_timeout}s). Intenta de nuevo o aumenta el timeout.')
+                print(f"❌ Timeout: {str(e)}")
+                messages.error(request, f'Timeout al conectar con API ({api_timeout}s)')
             except requests.exceptions.ConnectionError as e:
-                print(f"❌ Error de conexión con la API: {str(e)}")
-                print(f"   URL: {api_url}")
-                messages.error(request, f'No se pudo conectar con la API. Verifica que esté corriendo en {api_url}')
-            except requests.exceptions.RequestException as e:
-                print(f"❌ Error en la solicitud: {str(e)}")
-                messages.error(request, f'Error al conectar con el servidor de análisis: {str(e)}')
+                print(f"❌ Conexión rechazada: {str(e)}")
+                messages.error(request, f'No se pudo conectar con la API en {api_url}')
             except Exception as e:
                 print(f"❌ Error inesperado: {str(e)}")
                 import traceback
                 print(traceback.format_exc())
-                messages.error(request, f'Error inesperado: {str(e)}')
+                messages.error(request, f'Error: {str(e)}')
+        
         elif not zip_file:
             print("⚠ No se recibió archivo ZIP")
             messages.error(request, 'Por favor selecciona un archivo ZIP')
         else:
-            print(f"❌ Errores en formulario: {form.errors}")
+            print(f"❌ Formulario inválido: {form.errors}")
             for field, errors in form.errors.items():
                 messages.error(request, f'{field}: {errors[0]}')
     
@@ -317,6 +426,22 @@ def evaluation_results(request, patient_id, evaluation_id=None):
         'evaluation': evaluation,
     }
     return render(request, 'evaluation_results.html', context)
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_evaluation_task_status(request, evaluation_id):
+    """Retorna task_id y estado de una evaluación para polling inicial."""
+    try:
+        evaluation = get_object_or_404(Evaluation, id=evaluation_id)
+        return JsonResponse({
+            'success': True,
+            'evaluation_id': str(evaluation.id),
+            'task_id': evaluation.task_id,
+            'analysis_status': evaluation.analysis_status,
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 
 @login_required

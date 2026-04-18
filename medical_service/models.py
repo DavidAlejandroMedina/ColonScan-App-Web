@@ -87,16 +87,25 @@ class Evaluation(models.Model):
     analysis_completed_at = models.DateTimeField(null=True, blank=True)
     task_id = models.CharField(max_length=255, null=True, blank=True)  # ID de tarea de la API
     
+    # Campos para archivos en Google Cloud Storage
+    gcs_file_url = models.URLField(null=True, blank=True)  # URL del archivo en GCS
+    gcs_blob_name = models.CharField(max_length=500, null=True, blank=True)  # Ruta del blob en GCS
+    
     def __str__(self):
         return f"Evaluación {self.patient} - {self.study_date}"
 
 class UploadedFile(models.Model):
     """Modelo para archivos subidos durante la evaluación"""
     evaluation = models.ForeignKey(Evaluation, on_delete=models.CASCADE, related_name='files')
-    file = models.FileField(upload_to='ctc_scans/%Y/%m/%d/')
+    file = models.FileField(upload_to='ctc_scans/%Y/%m/%d/', null=True, blank=True)  # Archivo local (opcional)
     original_filename = models.CharField(max_length=255)
     file_size = models.IntegerField()  # en bytes
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    # Campos para Google Cloud Storage
+    gcs_blob_name = models.CharField(max_length=500, null=True, blank=True)  # Ruta en el bucket
+    gcs_file_url = models.URLField(null=True, blank=True)  # URL firmada para acceder al archivo
+    gcs_uploaded_at = models.DateTimeField(null=True, blank=True)  # Fecha de carga a GCS
     
     def __str__(self):
         return self.original_filename

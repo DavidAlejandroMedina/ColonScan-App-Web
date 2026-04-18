@@ -17,13 +17,20 @@ RUN pip install --upgrade pip && \
     pip wheel --no-cache-dir --no-deps --wheel-dir /opt/wheels -r requirements.txt
 
 # Stage 2: Runtime
-from python:3.11-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
-# Instalar runtime dependencies
+# Instalar runtime dependencies incluyendo Google Cloud CLI
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
+    curl \
+    gnupg \
+    ca-certificates \
+    lsb-release \
+    && curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk lsb-release main" | tee /etc/apt/sources.list.d/google-cloud-sdk.list \
+    && apt-get update && apt-get install -y --no-install-recommends google-cloud-cli \
     && rm -rf /var/lib/apt/lists/*
 
 # Copiar wheels del builder
@@ -32,7 +39,7 @@ COPY requirements.txt .
 
 # Instalar dependencias
 RUN pip install --upgrade pip && \
-    pip install --no-cache /opt/wheels/* && \
+    pip install --no-cache-dir /opt/wheels/* && \
     rm -rf /opt/wheels requirements.txt
 
 # Copiar aplicación

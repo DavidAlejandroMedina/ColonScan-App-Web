@@ -2,6 +2,7 @@ asgiref==3.7.1
 certifi==2024.12.14
 charset-normalizer==3.3.2
 Django==5.0.1
+google-cloud-storage==2.10.0
 gunicorn==21.2.0
 idna==3.7
 psycopg2-binary==2.9.9

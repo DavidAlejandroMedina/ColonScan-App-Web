@@ -1,0 +1,23 @@
+[Unit]
+Description=ColonScan Django (Gunicorn)
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/colonscan/app
+EnvironmentFile=/opt/colonscan/app/.env
+ExecStart=/opt/colonscan/venv/bin/gunicorn \
+    --workers 4 \
+    --worker-class sync \
+    --timeout 1200 \
+    --graceful-timeout 90 \
+    --bind unix:/run/colonscan/gunicorn.sock \
+    colonscan_project.wsgi:application
+Restart=always
+RestartSec=5
+RuntimeDirectory=colonscan
+RuntimeDirectoryMode=0755
+
+[Install]
+WantedBy=multi-user.target

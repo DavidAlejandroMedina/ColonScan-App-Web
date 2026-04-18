@@ -56,11 +56,14 @@
                                     </div>
                                     <div class="upload-text">
                                         <p class="upload-title">Haga clic para seleccionar archivo ZIP</p>
-                                        <p class="upload-subtitle">Formato soportado: ZIP (máx. 500MB)</p>
+                                        <p class="upload-subtitle">Formato soportado: ZIP (máx. 1GB)</p>
                                     </div>
                                 </div>
                             </label>
                         </div>
+                          {% if form.zip_file.errors %}
+                              <small class="error-text">{{ form.zip_file.errors.0 }}</small>
+                          {% endif %}
                     </div>
 
                     <!-- Study Date -->
@@ -103,7 +106,7 @@
                     <!-- Form Actions -->
                     <div class="form-actions">
                         <a href="{% url 'patient_detail' patient.id %}" class="btn btn-outline">Cancelar</a>
-                        <button type="button" class="btn btn-primary" id="submitBtn" onclick="handleSubmit(event)">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594zM20 2v4m2-2h-4"/><circle cx="4" cy="20" r="2"/></g></svg>
                             Iniciar análisis IA
                         </button>
@@ -116,61 +119,46 @@
         </main>
     </div>
 
-    <!-- JSZip Library for file compression -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
     <script>
         // File upload configuration
+        const evaluationForm = document.querySelector('.evaluation-form');
         const fileInput = document.getElementById('file-upload');
         const uploadContent = document.getElementById('uploadContent');
         const uploadArea = document.getElementById('fileUploadArea');
         const submitBtn = document.getElementById('submitBtn');
-        const API_BASE_URL = 'http://localhost:8001/api/v1';
 
-        // Inicializar el botón como deshabilitado
-        submitBtn.disabled = true;
+        const submitBtnLoadingHtml = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c4.97 0 9 4.03 9 9"><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></svg>
+            Procesando archivos...
+        `;
 
-        // Función para validar si el formulario está completo
-        function validateForm() {
-            const hasFile = fileInput.files && fileInput.files.length > 0;
-            const studyDateInput = document.querySelector('input[name="study_date"]');
-            const hasDate = studyDateInput && studyDateInput.value !== '';
-
-            submitBtn.disabled = !(hasFile && hasDate);
-        }
+        // Mostrar estado de carga mientras el backend sube a GCS y llama la API
+        evaluationForm.addEventListener('submit', function () {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = submitBtnLoadingHtml;
+        });
 
         // Escuchar cambios en el archivo
         fileInput.addEventListener('change', function(e) {
-            const files = Array.from(this.files);
-            
-            if (files.length > 0) {
-                const totalSize = files.reduce((acc, file) => acc + file.size, 0);
-                const sizeInMB = (totalSize / (1024 * 1024)).toFixed(2);
+            const selectedFile = this.files[0];
+
+            if (selectedFile) {
+                const sizeInMB = (selectedFile.size / (1024 * 1024)).toFixed(2);
                 
                 uploadContent.innerHTML = `
                     <div class="success-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="2em" height="2em" viewBox="0 0 20 20"><path fill="#00a63e" d="M17.125 6.17L15.079.535c-.151-.416-.595-.637-.989-.492L.492 5.006c-.394.144-.593.597-.441 1.013l2.156 5.941V8.777c0-1.438 1.148-2.607 2.56-2.607H8.36l4.285-3.008l2.479 3.008zM19.238 8H4.767a.76.76 0 0 0-.762.777v9.42c.001.444.343.803.762.803h14.471c.42 0 .762-.359.762-.803v-9.42A.76.76 0 0 0 19.238 8M18 17H6v-2l1.984-4.018l2.768 3.436l2.598-2.662l3.338-1.205L18 14z" stroke-width="0.5" stroke="#00a63e"/></svg>
                     </div>
                     <div>
-                        <p class="success-title">${files.length} archivo${files.length !== 1 ? 's' : ''} seleccionado${files.length !== 1 ? 's' : ''}</p>
-                        <p class="success-subtitle">${sizeInMB} MB total</p>
+                        <p class="success-title">${selectedFile.name}</p>
+                        <p class="success-subtitle">${sizeInMB} MB</p>
                     </div>
                     <button type="button" class="btn btn-outline" onclick="resetFileUpload()">
-                        Cambiar archivos
+                        Cambiar archivo
                     </button>
                 `;
             }
 
-            // Validar formulario después de cambiar archivo
-            validateForm();
-        });
-
-        // Escuchar cambios en la fecha
-        document.addEventListener('DOMContentLoaded', function() {
-            const studyDateInput = document.querySelector('input[name="study_date"]');
-            if (studyDateInput) {
-                studyDateInput.addEventListener('change', validateForm);
-            }
         });
 
         function resetFileUpload() {
@@ -181,181 +169,10 @@
                     </svg>
                 </div>
                 <div class="upload-text">
-                    <p class="upload-title">Haga clic para seleccionar carpeta o múltiples archivos</p>
-                    <p class="upload-subtitle">Formatos soportados: DICOM, JPEG, PNG (máx. 100MB por archivo)</p>
+                    <p class="upload-title">Haga clic para seleccionar archivo ZIP</p>
+                    <p class="upload-subtitle">Formato soportado: ZIP (hasta 1 GB)</p>
                 </div>
             `;
-            validateForm();
-        }
-
-        // Handle form submission
-        async function handleSubmit(event) {
-            event.preventDefault();
-
-            const files = Array.from(fileInput.files);
-            const studyDate = document.querySelector('input[name="study_date"]').value;
-            const observations = document.querySelector('textarea[name="observations"]').value;
-            const patientId = document.querySelector('input[name="patient_id"]').value;
-
-            // Validate files
-            if (files.length === 0) {
-                alert('Por favor selecciona un archivo ZIP');
-                return;
-            }
-
-            // Disable button and show loading state
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="20px" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c4.97 0 9 4.03 9 9"><animateTransform attributeName="transform" dur="1.5s" repeatCount="indefinite" type="rotate" values="0 12 12;360 12 12"/></path></svg>
-                Procesando archivos...
-            `;
-
-            try {
-                // First, save evaluation to get evaluation_id
-                const evaluationId = await saveEvaluationToDjango(patientId, studyDate, observations, 'pending');
-                console.log('Evaluation created with ID:', evaluationId);
-
-                // Check if the selected file is already a ZIP
-                let zipFile = files[0];
-                if (!zipFile.name.toLowerCase().endsWith('.zip')) {
-                    // If not a ZIP, create one from the files
-                    console.log('Creating ZIP file from selected files...');
-                    zipFile = await createZipFile(files);
-                }
-
-                // Create FormData with the ZIP file
-                const formData = new FormData();
-                formData.append('zip_file', zipFile);
-                formData.append('evaluation_id', evaluationId);
-                formData.append('patient_id', patientId);
-                formData.append('study_date', studyDate);
-
-                // Send to API - Use correct endpoint
-                console.log('Sending ZIP file to API at', `${API_BASE_URL}/analyze`);
-                const response = await fetch(`${API_BASE_URL}/analyze`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`API Error: ${errorData.detail || response.statusText}`);
-                }
-
-                const data = await response.json();
-                console.log('API Response:', data);
-
-                // Get task ID from response
-                const taskId = data.task_id;
-
-                // Update evaluation with task_id
-                await updateEvaluationTaskId(evaluationId, taskId);
-
-                // Redirect to processing page
-                window.location.href = `/patient/${patientId}/processing/${taskId}/${evaluationId}/`;
-
-            } catch (error) {
-                console.error('Error:', error);
-                alert(`Se produjo un error al procesar tu solicitud. Por favor, intenta más tarde.`);
-                console.log('Error details:', error.message);
-                // Revertir botón a su estado anterior
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594zM20 2v4m2-2h-4"/><circle cx="4" cy="20" r="2"/></g></svg>
-                    Iniciar análisis IA
-                `;
-            }
-        }
-
-        // Create a ZIP file from multiple files
-        async function createZipFile(files) {
-            const zip = new JSZip();
-            
-            for (const file of files) {
-                const content = await file.arrayBuffer();
-                zip.file(file.name, content);
-            }
-            
-            const zipBlob = await zip.generateAsync({ type: 'blob' });
-            return new File([zipBlob], 'images.zip', { type: 'application/zip' });
-        }
-
-        // Update evaluation with task_id
-        async function updateEvaluationTaskId(evaluationId, taskId) {
-            try {
-                const response = await fetch(`/evaluation/${evaluationId}/update_task/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken'),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ task_id: taskId })
-                });
-
-                if (!response.ok) {
-                    console.warn('Failed to update task_id');
-                }
-            } catch (error) {
-                console.warn('Error updating task_id:', error);
-            }
-        }
-
-        async function saveEvaluationToDjango(patientId, studyDate, observations, taskId) {
-            const formData = new FormData();
-            formData.append('patient_id', patientId);
-            formData.append('study_date', studyDate);
-            formData.append('observations', observations);
-
-            try {
-                const response = await fetch(`/patient/${patientId}/evaluation/save/`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': getCookie('csrftoken')
-                    }
-                });
-
-                if (!response.ok) {
-                    console.warn('Failed to save evaluation to Django');
-                    // Generar UUID temporal como fallback
-                    return generateUUID();
-                }
-
-                const data = await response.json();
-                return data.evaluation_id || generateUUID();
-            } catch (error) {
-                console.warn('Error saving evaluation:', error);
-                // Generar UUID temporal como fallback
-                return generateUUID();
-            }
-        }
-
-        // Simple UUID generator para fallback
-        function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0;
-                const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        function viewPatientDetails(patientId) {
-            window.location.href = `/patient/${patientId}/`;
         }
     </script>
 </body>
