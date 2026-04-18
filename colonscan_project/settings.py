@@ -14,6 +14,13 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+
+def env_bool(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
 # Carga el archivo .env
 load_dotenv()
 
@@ -47,8 +54,8 @@ else:
             host = host[1:]
         CSRF_TRUSTED_ORIGINS.append(f'https://{host}')
 
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', default=not DEBUG)
+CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', default=not DEBUG)
 
 
 # Application definition
