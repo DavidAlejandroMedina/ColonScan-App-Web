@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_http_methods
@@ -119,21 +120,31 @@ def dashboard_view(request):
 def login_view(request):
     if request.method == 'POST':
         try:
-            email = request.POST.get('email')
-            password = request.POST.get('password')
+            email = (request.POST.get('email') or '').strip()
+            password = request.POST.get('password') or ''
+
+            if not email or not password:
+                messages.error(request, 'Debes ingresar correo y contraseña')
+                return render(request, 'login.html', status=400)
 
             user = authenticate(request, username=email, password=password)
+
+            # Soporte opcional para login por email cuando el username es distinto.
+            if user is None and '@' in email:
+                user_by_email = User.objects.filter(email__iexact=email).first()
+                if user_by_email:
+                    user = authenticate(request, username=user_by_email.username, password=password)
 
             if user is not None:
                 login(request, user)
                 return redirect(f"{reverse('dashboard')}?login_success=1")
 
             messages.error(request, 'Credenciales incorrectas')
-            return redirect('login')  # Redirect to display message and consume it
+            return render(request, 'login.html', status=401)
         except Exception:
             logger.exception("Unexpected error during login")
             messages.error(request, 'Ocurrió un error al iniciar sesión. Intenta nuevamente.')
-            return redirect('login')
+            return render(request, 'login.html', status=500)
             
     return render(request, 'login.html')
 
