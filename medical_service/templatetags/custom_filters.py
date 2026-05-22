@@ -48,3 +48,21 @@ def iso_time(value):
         return value
     except Exception:
         return ""
+
+
+@register.filter
+def format_processing_time(value):
+    """Format seconds as Xm Ys when >= 60, otherwise Xs."""
+    if value is None or value == "":
+        return ""
+
+    try:
+        total_seconds = int(round(float(value)))
+    except (TypeError, ValueError):
+        return ""
+
+    if total_seconds < 60:
+        return f"{total_seconds}s"
+
+    minutes, seconds = divmod(total_seconds, 60)
+    return f"{minutes}m {seconds}s"

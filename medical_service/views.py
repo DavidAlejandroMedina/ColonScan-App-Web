@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.db.models import Max
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -26,6 +27,35 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+
+def _format_processing_time(seconds_value):
+    """Format processing time as Xm Ys when >= 60s, otherwise Xs."""
+    if seconds_value is None:
+        return None
+    try:
+        total_seconds = int(round(float(seconds_value)))
+    except (TypeError, ValueError):
+        return None
+
+    if total_seconds < 60:
+        return f"{total_seconds}s"
+
+    minutes, seconds = divmod(total_seconds, 60)
+    return f"{minutes}m {seconds}s"
+
+
+def _enrich_analysis_result_with_time(result_payload):
+    """Persist a human-friendly processing time string inside analysis_result."""
+    if not isinstance(result_payload, dict):
+        return result_payload
+
+    processing_time_seconds = result_payload.get('processing_time_seconds')
+    formatted_time = _format_processing_time(processing_time_seconds)
+    if formatted_time:
+        result_payload['processing_time_display'] = formatted_time
+
+    return result_payload
+
 @login_required
 @require_http_methods(["GET", "POST"])
 def dashboard_view(request):
@@ -38,7 +68,11 @@ def dashboard_view(request):
             patient.status = 'evaluated'
             patient.save()
     
-    patients = Patient.objects.all().order_by('-last_evaluation_date')
+    patients = (
+        Patient.objects
+        .annotate(last_study_date=Max('evaluations__study_date'))
+        .order_by('-last_study_date', '-last_evaluation_date')
+    )
     
     # # Generar IDs para pacientes que no tienen
     # for patient in patients:
@@ -490,6 +524,7 @@ def check_task_status(request, task_id):
                     evaluation = Evaluation.objects.get(task_id=task_id)
                     
                     # Guardar resultados en la evaluación
+                    result = _enrich_analysis_result_with_time(result)
                     evaluation.analysis_result = result
                     evaluation.analysis_status = 'completed'
                     evaluation.save()
@@ -648,7 +683,8 @@ def save_analysis_results(request, evaluation_id):
         evaluation = get_object_or_404(Evaluation, id=evaluation_id, doctor=request.user)
         
         # Guardar el resultado completo del API
-        evaluation.analysis_result = data.get('analysis_result')
+        analysis_result = _enrich_analysis_result_with_time(data.get('analysis_result'))
+        evaluation.analysis_result = analysis_result
         evaluation.analysis_status = data.get('status', 'completed')
         
         # Mapear el timestamp de predicción
