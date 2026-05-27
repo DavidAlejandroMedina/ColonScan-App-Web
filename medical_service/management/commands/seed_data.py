@@ -49,7 +49,7 @@ class Command(BaseCommand):
                 "last_name": "Ramirez Perez",
                 "age": 67,
                 "status": "pending",
-                "last_evaluation_date":  'No evaluado',
+                "last_evaluation_date": None,
                 "identification": "234920233",
             },
             {
@@ -58,7 +58,7 @@ class Command(BaseCommand):
                 "last_name": "Martinez Ruiz",
                 "age": 45,
                 "status": "pending",
-                "last_evaluation_date":  'No evaluado',
+                "last_evaluation_date": None,
                 "identification": "2349334334",
             },
             {
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 "last_name": "Fernandez",
                 "age": 59,
                 "status": "pending",
-                "last_evaluation_date":  'No evaluado',
+                "last_evaluation_date": None,
                 "identification": "2340494434",
             },
             {
@@ -76,7 +76,7 @@ class Command(BaseCommand):
                 "last_name": "Sanchez Torres",
                 "age": 38,
                 "status": "pending",
-                "last_evaluation_date":  'No evaluado',
+                "last_evaluation_date": None,
                 "identification": "23445494435",
             },
             {
@@ -85,7 +85,7 @@ class Command(BaseCommand):
                 "last_name": "Garcia Diaz",
                 "age": 71,
                 "status": "pending",
-                "last_evaluation_date":  'No evaluado',
+                "last_evaluation_date": None,
                 "identification": "434920234",
             },
         ]

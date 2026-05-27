@@ -49,6 +49,24 @@ def iso_time(value):
     except Exception:
         return ""
 
+@register.filter
+def date_or_default(value, format_string="d/m/Y", default_text="No evaluado"):
+    """
+    Format a date field, or return a default text if None/empty.
+    Usage: {{ patient.last_evaluation_date|date_or_default:"d/m/Y" }}
+           {{ patient.last_evaluation_date|date_or_default:"d/m/Y":"Sin información" }}
+    """
+    if not value:
+        return default_text
+    
+    try:
+        from django.template.defaultfilters import date as date_filter
+        formatted = date_filter(value, format_string)
+        # If date filter returns empty string, return default
+        return formatted if formatted else default_text
+    except Exception:
+        return default_text
+
 
 @register.filter
 def format_processing_time(value):

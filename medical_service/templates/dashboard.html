@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -116,7 +117,7 @@
                                 <tr class="patient-row" data-name="{{ patient.first_name|lower }} {{ patient.last_name|lower }}" data-patient-id="{{ patient.patient_id|default:''|lower }}">
                                     <td>{{ patient.first_name }} {{ patient.last_name }}</td>
                                     <td class="patient-id">{{ patient.identification|default:'PAT-XXXX-XXXX' }}</td>
-                                    <td>{{ patient.last_study_date|date:'d/m/Y'|default:'No evaluado' }}</td>
+                                    <td>{{ patient.last_evaluation_date|date_or_default }}</td>
                                     <td>
                                         {% if patient.status == 'evaluated' %}
                                         <span class="badge badge-success">Evaluado</span>
