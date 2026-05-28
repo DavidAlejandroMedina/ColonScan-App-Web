@@ -229,32 +229,23 @@ class GCSService:
             # Obtener el token de acceso del metadata service
             credentials, project_id = google.auth.default()
             
-            # Obtener details de la cuenta de servicio
+            # Obtener el email de la cuenta de servicio del metadata service
+            # (este es el método más confiable en Compute Engine)
+            service_account_email = None
             try:
-                from google.cloud import compute_v1
-                compute_client = compute_v1.InstancesClient()
-                instance_name = os.getenv('GCP_INSTANCE_NAME', 'colonscan-web-vm')
-                zone = os.getenv('GCP_ZONE', 'us-central1-a')
-                instance = compute_client.get(
-                    project=project_id,
-                    zone=zone,
-                    resource=instance_name
+                resp = requests.get(
+                    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email',
+                    headers={'Metadata-Flavor': 'Google'},
+                    timeout=2
                 )
-                service_account_email = instance.service_accounts[0].email if instance.service_accounts else None
-            except Exception:
-                # Fallback: intentar obtener del metadata service
-                try:
-                    resp = requests.get(
-                        'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email',
-                        headers={'Metadata-Flavor': 'Google'},
-                        timeout=2
-                    )
-                    service_account_email = resp.text if resp.status_code == 200 else None
-                except Exception:
-                    service_account_email = None
+                if resp.status_code == 200:
+                    service_account_email = resp.text.strip()
+                    logger.debug(f"📋 Service account email obtenido del metadata service: {service_account_email}")
+            except Exception as e:
+                logger.debug(f"⚠️ Error obteniendo SA email del metadata: {str(e)}")
             
             if not service_account_email:
-                logger.warning("⚠️ No se pudo obtener service account email")
+                logger.debug("⚠️ No se pudo obtener service account email del metadata service")
                 return None
             
             # Construir el "string to sign" para la URL firmada de GCS
@@ -270,7 +261,7 @@ class GCSService:
                 f"/{self.bucket_name}/{blob_name}"
             ])
             
-            logger.info(f"📝 Firmando string para URL: {service_account_email}")
+            logger.debug(f"📝 Firmando string de URL con cuenta: {service_account_email}")
             
             # Usar IAM signBlob para firmar
             refresh_request = Request()
@@ -290,14 +281,14 @@ class GCSService:
             response = requests.post(iam_url, json=body, headers=headers, timeout=10)
             
             if response.status_code != 200:
-                logger.warning(f"⚠️ IAM signBlob failed: {response.status_code} - {response.text}")
+                logger.debug(f"⚠️ IAM signBlob API retornó {response.status_code}: {response.text[:200]}")
                 return None
             
             signature_data = response.json()
             signature_b64 = signature_data.get('signature', '')
             
             if not signature_b64:
-                logger.warning("⚠️ No signature returned from IAM API")
+                logger.debug("⚠️ IAM API no retornó una firma válida")
                 return None
             
             # Construir la URL firmada
@@ -308,11 +299,11 @@ class GCSService:
                 f"&Signature={quote_plus(signature_b64)}"
             )
             
-            logger.info("✅ Signed URL generada con Google IAM API")
+            logger.info(f"✅ Signed URL generada con Google IAM signBlob API")
             return signed_url
             
         except Exception as e:
-            logger.warning(f"⚠️ Error generando URL con IAM API: {str(e)}")
+            logger.debug(f"⚠️ Error generando URL con IAM signBlob: {str(e)}")
             return None
 
     def get_signed_url(self, blob_name: str, expiration_days: int = 7) -> str:
