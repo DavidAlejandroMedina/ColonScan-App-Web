@@ -87,8 +87,11 @@
         // Configuration
         const API_BASE_URL = 'http://localhost:8001/api/v1';
         const POLLING_INTERVAL = 2000; // 2 segundos
-        const MAX_POLLING_TIME = 900000; // 15 minutos máximo
+        const MAX_POLLING_TIME = 3600000; // 60 minutos máximo (para archivos grandes)
         
+        let animationFrameId = null;
+        let pollingTimeoutId = null;
+        let isProcessingComplete = false;
         const stepIcons = [
             { // Step 1: Upload
                 svg: '<path fill="#fff" d="M17.125 6.17L15.079.535c-.151-.416-.595-.637-.989-.492L.492 5.006c-.394.144-.593.597-.441 1.013l2.156 5.941V8.777c0-1.438 1.148-2.607 2.56-2.607H8.36l4.285-3.008l2.479 3.008zM19.238 8H4.767a.76.76 0 0 0-.762.777v9.42c.001.444.343.803.762.803h14.471c.42 0 .762-.359.762-.803v-9.42A.76.76 0 0 0 19.238 8M18 17H6v-2l1.984-4.018l2.768 3.436l2.598-2.662l3.338-1.205L18 14z" stroke-width="0.5" stroke="#fff"/>' 
@@ -179,9 +182,20 @@
         }
 
         function updateProgress(value) {
+            if (isProcessingComplete) return; // No actualizar si ya terminó
+            
             progress = Math.min(value, 100);
-            document.getElementById('progressFill').style.width = progress + '%';
-            document.getElementById('progressPercent').textContent = Math.round(progress);
+            
+            // Verificar que los elementos existen antes de actualizarlos
+            const progressFill = document.getElementById('progressFill');
+            const progressPercent = document.getElementById('progressPercent');
+            
+            if (progressFill) {
+                progressFill.style.width = progress + '%';
+            }
+            if (progressPercent) {
+                progressPercent.textContent = Math.round(progress);
+            }
         }
 
         function startProgressAnimation() {
@@ -189,21 +203,29 @@
             visualAnimationStopped = false;
 
             function tick() {
-                if (visualAnimationStopped) {
+                if (visualAnimationStopped || isProcessingComplete) {
                     return;
                 }
 
                 renderVisualProgress();
 
-                if (!visualAnimationStopped) {
-                    requestAnimationFrame(tick);
+                if (!visualAnimationStopped && !isProcessingComplete) {
+                    animationFrameId = requestAnimationFrame(tick);
                 }
             }
 
-            requestAnimationFrame(tick);
+            animationFrameId = requestAnimationFrame(tick);
         }
 
         function renderVisualProgress() {
+            // Verificar que los elementos existen
+            const stepElements = document.querySelectorAll('[id^="step-"]');
+            if (!stepElements.length) {
+                // Los elementos fueron removidos (error mostrado)
+                visualAnimationStopped = true;
+                return;
+            }
+
             const elapsed = Date.now() - visualStartTime;
             const clampedElapsed = Math.min(elapsed, TOTAL_VISUAL_DURATION);
             const effectiveElapsed = hasTaskIdAssigned
@@ -258,9 +280,13 @@
         }
 
         function waitForTaskId() {
+            if (isProcessingComplete) return; // Si ya falló, no hacer nada más
+            
             fetch(`/api/evaluation-task/${evaluationId}/`)
                 .then(response => response.json())
                 .then(data => {
+                    if (isProcessingComplete) return; // Si ya falló, no hacer nada más
+                    
                     if (data.success && data.task_id) {
                         markTaskIdAssigned(data.task_id);
                         console.log('🆔 Task ID asignado:', taskId);
@@ -273,11 +299,13 @@
                         return;
                     }
 
-                    setTimeout(waitForTaskId, POLLING_INTERVAL);
+                    pollingTimeoutId = setTimeout(waitForTaskId, POLLING_INTERVAL);
                 })
                 .catch(error => {
+                    if (isProcessingComplete) return; // Si ya falló, no hacer nada más
+                    
                     console.error('❌ Error obteniendo task_id por evaluación:', error);
-                    setTimeout(waitForTaskId, POLLING_INTERVAL);
+                    pollingTimeoutId = setTimeout(waitForTaskId, POLLING_INTERVAL);
                 });
         }
 
@@ -298,6 +326,8 @@
             fetch(`/api/check-task-status/${taskId}/`)
                 .then(response => response.json())
                 .then(data => {
+                    if (isProcessingComplete) return; // Si ya falló, no hacer nada más
+                    
                     console.log('📊 Task status:', data);
 
                     if (data.success) {
@@ -315,10 +345,10 @@
                             
                             const elapsedTime = Date.now() - pollingStartTime;
                             if (elapsedTime < MAX_POLLING_TIME) {
-                                console.log(`⏳ Proceso en curso... ${progress}% completado`);
-                                setTimeout(checkTaskStatus, POLLING_INTERVAL);
+                                console.log(`⏳ Proceso en curso... ${progress}% completado (${Math.floor(elapsedTime/1000)}s)`);
+                                pollingTimeoutId = setTimeout(checkTaskStatus, POLLING_INTERVAL);
                             } else {
-                                onAnalysisFailed('Timeout: El análisis tardó más de 5 minutos');
+                                onAnalysisFailed('Timeout: El análisis tardó más de 60 minutos');
                             }
                         }
                     } else {
@@ -326,17 +356,19 @@
                         console.error('❌ Error:', data.error);
                         const elapsedTime = Date.now() - pollingStartTime;
                         if (elapsedTime < MAX_POLLING_TIME) {
-                            setTimeout(checkTaskStatus, POLLING_INTERVAL);
+                            pollingTimeoutId = setTimeout(checkTaskStatus, POLLING_INTERVAL);
                         } else {
                             onAnalysisFailed(data.error || 'No se pudo obtener el estado');
                         }
                     }
                 })
                 .catch(error => {
+                    if (isProcessingComplete) return; // Si ya falló, no hacer nada más
+                    
                     console.error('❌ Error checking task status:', error);
                     const elapsedTime = Date.now() - pollingStartTime;
                     if (elapsedTime < MAX_POLLING_TIME) {
-                        setTimeout(checkTaskStatus, POLLING_INTERVAL);
+                        pollingTimeoutId = setTimeout(checkTaskStatus, POLLING_INTERVAL);
                     } else {
                         onAnalysisFailed('Error de conexión al servidor');
                     }
@@ -347,6 +379,12 @@
             console.log('✅ Analysis completed!', apiData);
             console.log('   patientId:', patientId);
             console.log('   evaluationId:', evaluationId);
+            
+            // Marcar como completo para parar animaciones
+            isProcessingComplete = true;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
             
             // Completar la barra al 100%
             updateProgress(100);
@@ -378,16 +416,31 @@
 
         function onAnalysisFailed(error) {
             console.error('Analysis failed:', error);
-            document.querySelector('.processing-card').innerHTML = `
-                <div class="error-content">
-                    <div class="error-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"><path fill="currentColor" d="M12.713 16.713Q13 16.425 13 16t-.288-.712T12 15t-.712.288T11 16t.288.713T12 17t.713-.288m0-4Q13 12.425 13 12V8q0-.425-.288-.712T12 7t-.712.288T11 8v4q0 .425.288.713T12 13t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"/></svg>
+            
+            // Parar todas las animaciones y timers
+            isProcessingComplete = true;
+            visualAnimationStopped = true;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            if (pollingTimeoutId) {
+                clearTimeout(pollingTimeoutId);
+            }
+            
+            // Mostrar error
+            const card = document.querySelector('.processing-card');
+            if (card) {
+                card.innerHTML = `
+                    <div class="error-content">
+                        <div class="error-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24"><path fill="currentColor" d="M12.713 16.713Q13 16.425 13 16t-.288-.712T12 15t-.712.288T11 16t.288.713T12 17t.713-.288m0-4Q13 12.425 13 12V8q0-.425-.288-.712T12 7t-.712.288T11 8v4q0 .425.288.713T12 13t.713-.288M12 22q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8"/></svg>
+                        </div>
+                        <h2>Error en el análisis</h2>
+                        <p>${error}</p>
+                        <a href="/patient/${patientId}/" class="btn-retry">Volver al paciente</a>
                     </div>
-                    <h2>Error en el análisis</h2>
-                    <p>${error}</p>
-                    <a href="/patient/${patientId}/" class="btn-retry">Volver al paciente</a>
-                </div>
-            `;
+                `;
+            }
         }
 
         // El monitoreo real se inicia con startTaskMonitoring().
