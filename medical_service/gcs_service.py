@@ -9,6 +9,7 @@ import logging
 from google.cloud import storage
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 from datetime import timedelta
 
 logger = logging.getLogger(__name__)
@@ -137,52 +138,54 @@ class GCSService:
 
             # Generar URL firmada válida por 7 días.
             # Si las credenciales no tienen clave privada (Compute Engine),
-            # intentamos el flujo IAM con service_account_email + access_token.
+            # usamos service account key desde variables de entorno
             signed_url = None
             try:
+                # Intento 1: Generar con credenciales locales (si tienen clave privada)
                 signed_url = blob.generate_signed_url(
                     version="v4",
                     expiration=timedelta(days=7),
                     method="GET"
                 )
+                logger.info("✅ Signed URL generada con credenciales locales")
             except Exception as sign_error:
                 logger.warning(
-                    f"⚠️ No se pudo generar signed URL con flujo local: {str(sign_error)}"
+                    f"⚠️ No se pudo generar signed URL con credenciales locales: {str(sign_error)}"
                 )
-
-                # Fallback para credenciales de Compute Engine/metadata server.
+                
+                # Intento 2: Intentar con service account key si está disponible
                 try:
-                    creds = self.client._credentials
-                    if getattr(creds, 'service_account_email', None):
-                        creds.refresh(Request())
+                    from google.oauth2 import service_account
+                    service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+                    
+                    if service_account_json and os.path.exists(service_account_json):
+                        service_creds = service_account.Credentials.from_service_account_file(
+                            service_account_json,
+                            scopes=['https://www.googleapis.com/auth/devstorage.full_control']
+                        )
                         signed_url = blob.generate_signed_url(
                             version="v4",
                             expiration=timedelta(days=7),
                             method="GET",
-                            service_account_email=creds.service_account_email,
-                            access_token=creds.token,
+                            service_account_email=service_creds.service_account_email,
+                            signing_credentials=service_creds
                         )
-                        logger.info("✅ Signed URL generada con IAM (Compute Engine)")
-                except Exception as iam_sign_error:
+                        logger.info("✅ Signed URL generada con service account key")
+                except Exception as key_error:
                     logger.warning(
-                        f"⚠️ No se pudo generar signed URL con IAM: {str(iam_sign_error)}"
+                        f"⚠️ No se pudo generar signed URL con service account key: {str(key_error)}"
                     )
 
-            if self.make_public_on_upload:
-                if self.uniform_bucket_level_access:
-                    logger.warning(
-                        "⚠️ No se puede usar make_public: Uniform Bucket-Level Access está habilitado"
-                    )
-                else:
-                    try:
-                        blob.make_public()
-                        public_url = blob.public_url
-                        is_public = True
-                        logger.info(f"✅ Archivo marcado como público: {blob_name}")
-                    except Exception as public_error:
-                        logger.warning(
-                            f"⚠️ No se pudo hacer público el archivo {blob_name}: {str(public_error)}"
-                        )
+            # Las URLs públicas no funcionan con uniform bucket-level access
+            # Por lo tanto, siempre confiamos en URLs firmadas
+            public_url = None
+            is_public = False
+            
+            if self.uniform_bucket_level_access:
+                logger.info(
+                    "ℹ️ Uniform Bucket-Level Access habilitado. "
+                    "Se usarán URLs firmadas en lugar de URLs públicas."
+                )
             
             # Si no hay signed URL y el objeto no es público, la API no podrá leerlo por HTTPS.
             if not signed_url and not is_public:
@@ -253,12 +256,41 @@ class GCSService:
             
         try:
             blob = self.bucket.blob(blob_name)
-            signed_url = blob.generate_signed_url(
-                version="v4",
-                expiration=timedelta(days=expiration_days),
-                method="GET"
-            )
-            return signed_url
+            
+            # Intento 1: Con credenciales locales
+            try:
+                signed_url = blob.generate_signed_url(
+                    version="v4",
+                    expiration=timedelta(days=expiration_days),
+                    method="GET"
+                )
+                return signed_url
+            except Exception:
+                pass
+            
+            # Intento 2: Con service account key
+            try:
+                from google.oauth2 import service_account
+                service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+                
+                if service_account_json and os.path.exists(service_account_json):
+                    service_creds = service_account.Credentials.from_service_account_file(
+                        service_account_json,
+                        scopes=['https://www.googleapis.com/auth/devstorage.full_control']
+                    )
+                    signed_url = blob.generate_signed_url(
+                        version="v4",
+                        expiration=timedelta(days=expiration_days),
+                        method="GET",
+                        service_account_email=service_creds.service_account_email,
+                        signing_credentials=service_creds
+                    )
+                    return signed_url
+            except Exception:
+                pass
+            
+            logger.error(f"❌ Error al generar URL firmada: No se pudo firmar con credenciales disponibles")
+            return None
         except Exception as e:
             logger.error(f"❌ Error al generar URL firmada: {str(e)}")
             return None
