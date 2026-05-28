@@ -140,8 +140,6 @@ class GCSService:
             # Requiere clave privada: por defecto desde GOOGLE_APPLICATION_CREDENTIALS
             signed_url = None
             try:
-                from google.oauth2 import service_account
-                
                 service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
                 logger.debug(f"🔐 Buscando credenciales en: {service_account_json}")
                 
@@ -153,12 +151,14 @@ class GCSService:
                     logger.debug(f"✅ Credenciales cargadas desde archivo")
                     logger.debug(f"   SA Email: {service_creds.service_account_email}")
                     
-                    signed_url = blob.generate_signed_url(
+                    # Crear cliente con credenciales específicas para firmar
+                    signing_client = storage.Client(credentials=service_creds)
+                    signing_blob = signing_client.bucket(self.bucket_name).blob(blob_name)
+                    
+                    signed_url = signing_blob.generate_signed_url(
                         version="v4",
                         expiration=timedelta(days=7),
-                        method="GET",
-                        service_account_email=service_creds.service_account_email,
-                        signing_credentials=service_creds
+                        method="GET"
                     )
                     logger.info(f"✅ Signed URL generada exitosamente con clave privada")
                 else:
@@ -256,8 +256,6 @@ class GCSService:
             return None
             
         try:
-            blob = self.bucket.blob(blob_name)
-            
             # Intentar con service account key (clave privada)
             try:
                 service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
@@ -268,12 +266,14 @@ class GCSService:
                     service_creds = service_account.Credentials.from_service_account_file(
                         service_account_json
                     )
-                    signed_url = blob.generate_signed_url(
+                    # Crear cliente con credenciales específicas para firmar
+                    signing_client = storage.Client(credentials=service_creds)
+                    signing_blob = signing_client.bucket(self.bucket_name).blob(blob_name)
+                    
+                    signed_url = signing_blob.generate_signed_url(
                         version="v4",
                         expiration=timedelta(days=expiration_days),
-                        method="GET",
-                        service_account_email=service_creds.service_account_email,
-                        signing_credentials=service_creds
+                        method="GET"
                     )
                     logger.debug(f"✅ get_signed_url: Generada con clave privada")
                     return signed_url
@@ -282,6 +282,7 @@ class GCSService:
             
             # Fallback: intentar sin clave privada (puede no funcionar en Compute Engine)
             try:
+                blob = self.bucket.blob(blob_name)
                 signed_url = blob.generate_signed_url(
                     version="v4",
                     expiration=timedelta(days=expiration_days),

@@ -22,40 +22,10 @@ import random
 import string
 import logging
 
-# Google Cloud Authentication
-try:
-    from google.auth.transport.requests import Request
-    from google.oauth2 import service_account
-    import google.auth
-    GOOGLE_AUTH_AVAILABLE = True
-except ImportError:
-    GOOGLE_AUTH_AVAILABLE = False
-
 # Cargar variables de entorno
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-
-def _get_google_cloud_token():
-    """
-    Get a Google Cloud authentication token using Application Default Credentials (ADC).
-    This allows the VM's service account to authenticate with Cloud Run.
-    """
-    if not GOOGLE_AUTH_AVAILABLE:
-        return None
-    
-    try:
-        credentials, project = google.auth.default()
-        
-        # Refresh credentials to get a valid token
-        request = Request()
-        credentials.refresh(request)
-        
-        return credentials.token
-    except Exception as e:
-        print(f"⚠️ Warning: Could not get Google Cloud token: {e}")
-        return None
 
 
 def _format_processing_time(seconds_value):
@@ -362,19 +332,9 @@ def evaluation(request, patient_id):
                 
                 # Preparar headers
                 headers = {
+                    'Authorization': f'Bearer {request.user.id}',
                     'Content-Type': 'application/json'
                 }
-                
-                # Usar Google Cloud authentication si disponible (para Cloud Run)
-                gcloud_token = _get_google_cloud_token()
-                if gcloud_token:
-                    print(f"✅ Usando Google Cloud authentication")
-                    headers['Authorization'] = f'Bearer {gcloud_token}'
-                else:
-                    # Fallback a autenticación local
-                    print(f"ℹ️ Google Cloud auth no disponible, usando autenticación local")
-                    headers['Authorization'] = f'Bearer {request.user.id}'
-                
                 if api_key:
                     headers['X-API-Key'] = api_key
                 
