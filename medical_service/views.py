@@ -494,10 +494,11 @@ def get_evaluation_task_status(request, evaluation_id):
 def check_task_status(request, task_id):
     """Endpoint API para verificar el estado del procesamiento de tareas"""
     try:
-        # Obtener configuración de la API
-        # En Docker: usar host.docker.internal para acceder al host local
-        # En local: usar localhost
-        api_base_url = os.getenv('API_BASE_URL', 'http://host.docker.internal:8001/api/v1')
+        # Obtener configuración de la API desde variables de entorno
+        # Construir la URL de status a partir de API_URL quitando "/analyze"
+        api_url = os.getenv('API_URL', 'http://host.docker.internal:8001/api/v1/analyze')
+        # Convertir "/analyze" a "/task/{task_id}"
+        api_base_url = api_url.rsplit('/analyze', 1)[0] if '/analyze' in api_url else api_url.rsplit('/api/v1', 1)[0] + '/api/v1'
         api_status_url = f"{api_base_url}/task/{task_id}"
         api_timeout = int(os.getenv('API_TIMEOUT', '30'))
         
