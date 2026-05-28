@@ -6,11 +6,15 @@ Maneja la carga de archivos ZIP a GCS y genera URLs firmadas
 import os
 import time
 import logging
+import base64
+import hashlib
 from google.cloud import storage
 from google.auth.exceptions import DefaultCredentialsError
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
-from datetime import timedelta
+from google.auth import iam
+import google.auth
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -137,44 +141,9 @@ class GCSService:
             is_public = False
 
             # Generar URL firmada válida por 7 días.
-            # Si las credenciales no tienen clave privada (Compute Engine),
-            # usamos service account key desde variables de entorno
-            signed_url = None
-            try:
-                # Intento 1: Generar con credenciales locales (si tienen clave privada)
-                signed_url = blob.generate_signed_url(
-                    version="v4",
-                    expiration=timedelta(days=7),
-                    method="GET"
-                )
-                logger.info("✅ Signed URL generada con credenciales locales")
-            except Exception as sign_error:
-                logger.warning(
-                    f"⚠️ No se pudo generar signed URL con credenciales locales: {str(sign_error)}"
-                )
-                
-                # Intento 2: Intentar con service account key si está disponible
-                try:
-                    from google.oauth2 import service_account
-                    service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-                    
-                    if service_account_json and os.path.exists(service_account_json):
-                        service_creds = service_account.Credentials.from_service_account_file(
-                            service_account_json,
-                            scopes=['https://www.googleapis.com/auth/devstorage.full_control']
-                        )
-                        signed_url = blob.generate_signed_url(
-                            version="v4",
-                            expiration=timedelta(days=7),
-                            method="GET",
-                            service_account_email=service_creds.service_account_email,
-                            signing_credentials=service_creds
-                        )
-                        logger.info("✅ Signed URL generada con service account key")
-                except Exception as key_error:
-                    logger.warning(
-                        f"⚠️ No se pudo generar signed URL con service account key: {str(key_error)}"
-                    )
+            # Se intentan múltiples métodos dependiendo de dónde se ejecute la aplicación
+            logger.info("📝 Generando URL firmada para GCS...")
+            signed_url = self.get_signed_url(blob_name, expiration_days=7)
 
             # Las URLs públicas no funcionan con uniform bucket-level access
             # Por lo tanto, siempre confiamos en URLs firmadas
@@ -240,6 +209,112 @@ class GCSService:
             logger.error(f"❌ Error al eliminar archivo de GCS: {str(e)}")
             return False
     
+    def _generate_signed_url_with_iam(self, blob_name: str, expiration_days: int = 7) -> str:
+        """
+        Genera URL firmada usando Google IAM API directamente (para Compute Engine)
+        Construye el string a firmar y usa iam.serviceAccounts.signBlob
+        
+        Args:
+            blob_name: Nombre del blob en GCS
+            expiration_days: Días de validez de la URL
+            
+        Returns:
+            str: URL firmada completamente construida
+        """
+        try:
+            import json
+            import requests
+            from urllib.parse import quote_plus
+            
+            # Obtener el token de acceso del metadata service
+            credentials, project_id = google.auth.default()
+            
+            # Obtener details de la cuenta de servicio
+            try:
+                from google.cloud import compute_v1
+                compute_client = compute_v1.InstancesClient()
+                instance_name = os.getenv('GCP_INSTANCE_NAME', 'colonscan-web-vm')
+                zone = os.getenv('GCP_ZONE', 'us-central1-a')
+                instance = compute_client.get(
+                    project=project_id,
+                    zone=zone,
+                    resource=instance_name
+                )
+                service_account_email = instance.service_accounts[0].email if instance.service_accounts else None
+            except Exception:
+                # Fallback: intentar obtener del metadata service
+                try:
+                    resp = requests.get(
+                        'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email',
+                        headers={'Metadata-Flavor': 'Google'},
+                        timeout=2
+                    )
+                    service_account_email = resp.text if resp.status_code == 200 else None
+                except Exception:
+                    service_account_email = None
+            
+            if not service_account_email:
+                logger.warning("⚠️ No se pudo obtener service account email")
+                return None
+            
+            # Construir el "string to sign" para la URL firmada de GCS
+            expiration_datetime = datetime.now(timezone.utc) + timedelta(days=expiration_days)
+            expiration_unix = int(expiration_datetime.timestamp())
+            
+            # El formato requerido para firmar una URL de GCS
+            string_to_sign = "\n".join([
+                "GET",
+                "",  # Content-MD5
+                "",  # Content-Type
+                str(expiration_unix),
+                f"/{self.bucket_name}/{blob_name}"
+            ])
+            
+            logger.info(f"📝 Firmando string para URL: {service_account_email}")
+            
+            # Usar IAM signBlob para firmar
+            refresh_request = Request()
+            credentials.refresh(refresh_request)
+            
+            # Hacer request a IAM signBlob API
+            iam_url = f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{service_account_email}:signBlob"
+            headers = {
+                'Authorization': f'Bearer {credentials.token}',
+                'Content-Type': 'application/json'
+            }
+            
+            body = {
+                'bytesToSign': base64.b64encode(string_to_sign.encode('utf-8')).decode('utf-8')
+            }
+            
+            response = requests.post(iam_url, json=body, headers=headers, timeout=10)
+            
+            if response.status_code != 200:
+                logger.warning(f"⚠️ IAM signBlob failed: {response.status_code} - {response.text}")
+                return None
+            
+            signature_data = response.json()
+            signature_b64 = signature_data.get('signature', '')
+            
+            if not signature_b64:
+                logger.warning("⚠️ No signature returned from IAM API")
+                return None
+            
+            # Construir la URL firmada
+            signed_url = (
+                f"https://storage.googleapis.com/{self.bucket_name}/{blob_name}"
+                f"?GoogleAccessId={quote_plus(service_account_email)}"
+                f"&Expires={expiration_unix}"
+                f"&Signature={quote_plus(signature_b64)}"
+            )
+            
+            logger.info("✅ Signed URL generada con Google IAM API")
+            return signed_url
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Error generando URL con IAM API: {str(e)}")
+            return None
+
     def get_signed_url(self, blob_name: str, expiration_days: int = 7) -> str:
         """
         Genera una URL firmada para un archivo en GCS
@@ -257,20 +332,20 @@ class GCSService:
         try:
             blob = self.bucket.blob(blob_name)
             
-            # Intento 1: Con credenciales locales
+            # Intento 1: Con credenciales locales (si tienen clave privada - service account file)
             try:
                 signed_url = blob.generate_signed_url(
                     version="v4",
                     expiration=timedelta(days=expiration_days),
                     method="GET"
                 )
+                logger.info("✅ Signed URL generada con credenciales locales")
                 return signed_url
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Intento 1 fallido (credenciales locales): {str(e)}")
             
-            # Intento 2: Con service account key
+            # Intento 2: Con service account key desde archivo
             try:
-                from google.oauth2 import service_account
                 service_account_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
                 
                 if service_account_json and os.path.exists(service_account_json):
@@ -285,11 +360,17 @@ class GCSService:
                         service_account_email=service_creds.service_account_email,
                         signing_credentials=service_creds
                     )
+                    logger.info("✅ Signed URL generada con service account key file")
                     return signed_url
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Intento 2 fallido (service account file): {str(e)}")
             
-            logger.error(f"❌ Error al generar URL firmada: No se pudo firmar con credenciales disponibles")
+            # Intento 3: Usar Google IAM signBlob API (para Compute Engine)
+            signed_url = self._generate_signed_url_with_iam(blob_name, expiration_days)
+            if signed_url:
+                return signed_url
+            
+            logger.error(f"❌ No se pudo generar URL firmada con ningún método disponible")
             return None
         except Exception as e:
             logger.error(f"❌ Error al generar URL firmada: {str(e)}")
