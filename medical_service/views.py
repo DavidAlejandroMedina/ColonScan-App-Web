@@ -70,8 +70,11 @@ def dashboard_view(request):
     
     patients = (
         Patient.objects
-        .annotate(last_study_date=Max('evaluations__study_date'))
-        .order_by('-last_study_date', '-last_evaluation_date')
+        .annotate(
+            last_study_date=Max('evaluations__study_date'),
+            last_analysis_completed_at=Max('evaluations__analysis_completed_at')
+        )
+        .order_by('-last_analysis_completed_at', '-last_study_date', '-last_evaluation_date')
     )
     
     # # Generar IDs para pacientes que no tienen
